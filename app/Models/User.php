@@ -14,9 +14,6 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    private const CAST_HASHED = 'hashed';
-    private const CAST_BOOL = 'boolean';
-
     /**
      * The attributes that are mass assignable.
      *

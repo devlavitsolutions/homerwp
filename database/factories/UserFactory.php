@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Constants\Persist;
+use App\Helpers\Generators;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -25,7 +26,7 @@ class UserFactory extends Factory
     {
         return [
             Persist::EMAIL => fake()->unique()->safeEmail(),
-            Persist::PASSWORD => static::$password ??= bcrypt('password'),
+            Persist::PASSWORD => static::$password ??= Generators::encryptPassword('password'),
             Persist::REMEMBER_TOKEN => Str::random(10),
             Persist::LICENSE_KEY => fake()->uuid(),
             Persist::TOKENS_COUNT => fake()->number(0, 100),

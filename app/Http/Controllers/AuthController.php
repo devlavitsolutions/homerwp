@@ -7,13 +7,12 @@ use App\Constants\Persist;
 use App\Constants\Roles;
 use App\Constants\StatusCodes;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 use App\Models\User;
 use App\Constants\Routes;
 use App\Constants\Labels;
 use App\Constants\Messages;
+use App\Helpers\Generators;
 
 class AuthController extends Controller
 {
@@ -36,15 +35,15 @@ class AuthController extends Controller
 
         $user = User::create([
             Persist::EMAIL => $fields[Persist::EMAIL],
-            Persist::PASSWORD => bcrypt($fields[Persist::PASSWORD]),
-            Persist::LICENSE_KEY => Str::uuid()->toString(),
+            Persist::PASSWORD => Generators::encryptPassword($fields[Persist::PASSWORD]),
+            Persist::LICENSE_KEY => Generators::generateLicenseKey(),
         ]);
 
         $response = [
             Labels::USER => $user
         ];
 
-        return response($response, StatusCodes::CREATED);
+        return response($response, StatusCodes::CREATED->value);
     }
 
     public function login(Request $request) {
@@ -55,8 +54,13 @@ class AuthController extends Controller
 
         $user = User::where(Persist::EMAIL, $fields[Persist::EMAIL])->first();
 
-        if (!$user || !Hash::check($fields[Persist::PASSWORD], $user->password)) {
-            return response([Labels::MESSAGE => Messages::BAD_CREDENTIALS], StatusCodes::UNAUTHORIZED);
+        if (!$user
+            || !Generators::checkPassword($fields[Persist::PASSWORD], $user->password)
+        ) {
+            return response(
+                [Labels::MESSAGE => Messages::BAD_CREDENTIALS],
+                StatusCodes::UNAUTHORIZED->value
+            );
         }
 
         $abilities = $user->is_admin ? [Roles::Admin->value] : [];
@@ -68,13 +72,13 @@ class AuthController extends Controller
             Labels::TOKEN => $token
         ];
 
-        return response($response, StatusCodes::OK);
+        return response($response, StatusCodes::OK->value);
     }
 
     public function logout() {
         auth()->user()->tokens()->delete();
 
-        return response([Labels::MESSAGE => Messages::LOGOUT_SUCCESS], StatusCodes::OK);
+        return response([Labels::MESSAGE => Messages::LOGOUT_SUCCESS], StatusCodes::OK->value);
     }
 
     public function getAllUsers(Request $request) {
@@ -106,26 +110,38 @@ class AuthController extends Controller
     public function setEmail(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
+        $fields = $request->validate(([
+            Persist::EMAIL => Persist::VALIDATE_EMAIL,
+        ]));
+
+        $email = $fields[Persist::EMAIL];
+
         User::whereKey([$userId])
             ->limit(1)
-            ->update([Persist::EMAIL => $request->email]);
+            ->update([Persist::EMAIL => $email]);
 
         return [
             Persist::ID => $userId,
-            Persist::EMAIL => $request->email,
+            Persist::EMAIL => $email,
         ];
     }
 
     public function setTokensCount(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
+        $fields = $request->validate(([
+            Persist::TOKENS_COUNT => Persist::VALIDATE_TOKENS_COUNT,
+        ]));
+
+        $tokensCount = $fields[Persist::TOKENS_COUNT];
+
         User::whereKey([$userId])
             ->limit(1)
-            ->update([Persist::TOKENS_COUNT => $request->tokensCount]);
+            ->update([Persist::TOKENS_COUNT => $tokensCount]);
 
         return [
             Persist::ID => $userId,
-            Persist::TOKENS_COUNT => $request->tokensCount,
+            Persist::TOKENS_COUNT => $tokensCount,
         ];
     }
 
@@ -134,7 +150,11 @@ class AuthController extends Controller
 
         $user = User::find($userId);
 
-        $user->increment(Persist::TOKENS_COUNT, $request->tokensCount);
+        $fields = $request->validate(([
+            Persist::TOKENS_COUNT => Persist::VALIDATE_TOKENS_COUNT,
+        ]));
+
+        $user->increment(Persist::TOKENS_COUNT, $fields[Persist::TOKENS_COUNT]);
 
         $newTokensCount = $user->fresh()->tokens_count;
 
@@ -172,7 +192,7 @@ class AuthController extends Controller
     public function resetLicenseKey(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
-        $licenseKey = Str::uuid()->toString();
+        $licenseKey = Generators::generateLicenseKey();
 
         User::whereKey([$userId])
             ->limit(1)
@@ -193,7 +213,7 @@ class AuthController extends Controller
         $user = User::findOrFail($userId);
 
         if ($newIsDisabledState && $user->is_admin) {
-            abort(StatusCodes::UNPROCESSABLE, Messages::BAD_REQUEST_DISABLE_ADMIN);
+            abort(StatusCodes::UNPROCESSABLE->value, Messages::BAD_REQUEST_DISABLE_ADMIN);
         }
 
         $user->update([Persist::IS_DISABLED => $newIsDisabledState]);
@@ -216,7 +236,7 @@ class AuthController extends Controller
                 ->count();
             
             if ($adminCount <= 1) {
-                abort(StatusCodes::UNPROCESSABLE, Messages::BAD_REQUEST_LAST_ADMIN);
+                abort(StatusCodes::UNPROCESSABLE->value, Messages::BAD_REQUEST_LAST_ADMIN);
             }
         }
 
@@ -237,8 +257,8 @@ class AuthController extends Controller
 
         $user = User::findOrFail($userId);
 
-        $user->update([Persist::PASSWORD => bcrypt($fields[Persist::PASSWORD])]);
+        $user->update([Persist::PASSWORD => Generators::encryptPassword($fields[Persist::PASSWORD])]);
 
-        return response(StatusCodes::NO_CONTENT);
+        return response(StatusCodes::NO_CONTENT->value);
     }
 }
