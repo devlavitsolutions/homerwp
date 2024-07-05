@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use App\Constants\Persist;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -12,15 +14,21 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    private const CAST_HASHED = 'hashed';
+    private const CAST_BOOL = 'boolean';
+
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        Persist::EMAIL,
+        Persist::PASSWORD,
+        Persist::LICENSE_KEY,
+        Persist::TOKENS_COUNT,
+        Persist::IS_ADMIN,
+        Persist::IS_DISABLED,
     ];
 
     /**
@@ -29,8 +37,8 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        'password',
-        'remember_token',
+        Persist::PASSWORD,
+        Persist::REMEMBER_TOKEN,
     ];
 
     /**
@@ -39,7 +47,8 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
+        Persist::PASSWORD => 'hashed',
+        Persist::IS_ADMIN => 'boolean',
+        Persist::IS_DISABLED => 'boolean',
     ];
 }

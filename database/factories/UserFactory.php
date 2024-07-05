@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Constants\Persist;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -24,11 +24,13 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            Persist::EMAIL => fake()->unique()->safeEmail(),
+            Persist::PASSWORD => static::$password ??= bcrypt('password'),
+            Persist::REMEMBER_TOKEN => Str::random(10),
+            Persist::LICENSE_KEY => fake()->uuid(),
+            Persist::TOKENS_COUNT => fake()->number(0, 100),
+            Persist::IS_ADMIN => fake()->boolean(),
+            Persist::IS_DISABLED => fake()->boolean(),
         ];
     }
 
@@ -37,8 +39,6 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(fn (array $attributes) => []);
     }
 }
