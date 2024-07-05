@@ -15,4 +15,5 @@ class Persist {
     const VALIDATE_ID = 'required|numeric|exists:users,id';
     const VALIDATE_EMAIL = 'required|email:rfc,dns|unique:users,email';
     const VALIDATE_PASSWORD = 'required|string|min:8';
+    const VALIDATE_TOKENS_COUNT = 'required|numeric|gte:0';
 }
