@@ -1,0 +1,82 @@
+### Register
+POST http://127.0.0.1:8000/api/register
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "yourPassword"
+}
+
+### Login
+POST http://127.0.0.1:8000/api/login
+Content-Type: application/json
+
+{
+  "email": "user@example.com",
+  "password": "yourPassword"
+}
+
+### Logout
+POST http://127.0.0.1:8000/api/logout
+Authorization: Bearer {token}
+
+### Get All Users (Admin only)
+GET http://127.0.0.1:8000/api/users
+Authorization: Bearer {admin_token}
+
+### Get User by ID (Admin only)
+GET http://127.0.0.1:8000/api/users/{userId}
+Authorization: Bearer {admin_token}
+
+### Update User Email (Admin only)
+PUT http://127.0.0.1:8000/api/users/{userId}/email
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "email": "newemail@example.com"
+}
+
+### Update Tokens Count (Admin only)
+PUT http://127.0.0.1:8000/api/users/{userId}/tokens-count
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "tokens_count": 100
+}
+
+### Get License Key (Admin only)
+GET http://127.0.0.1:8000/api/users/{userId}/license-key
+Authorization: Bearer {admin_token}
+
+### Reset License Key (Admin only)
+DELETE http://127.0.0.1:8000/api/users/{userId}/license-key
+Authorization: Bearer {admin_token}
+
+### Disable User (Admin only)
+PUT http://127.0.0.1:8000/api/users/{userId}/is-disabled
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "is_disabled": true
+}
+
+### Set User as Admin (Admin only)
+PUT http://127.0.0.1:8000/api/users/{userId}/is-admin
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "is_admin": true
+}
+
+### Update User Password (Admin only)
+PUT http://127.0.0.1:8000/api/users/{userId}/password
+Authorization: Bearer {admin_token}
+Content-Type: application/json
+
+{
+  "password": "newSecurePassword"
+}
