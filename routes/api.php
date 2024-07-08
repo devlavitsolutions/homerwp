@@ -24,8 +24,6 @@ Route::post('/'.Routes::LOGIN, [AuthController::class, 'login']);
 // Admin-protected routes
 
 Route::group(['middleware' => ['auth:sanctum', 'abilities:'.Roles::Admin->value]], function() {
-    $userById = '/'.Routes::USERS.'/{'.Routes::USER_ID.'}';
-
     Route::post(
         '/'.Routes::REGISTER,
         [AuthController::class, 'register']
@@ -35,52 +33,55 @@ Route::group(['middleware' => ['auth:sanctum', 'abilities:'.Roles::Admin->value]
         '/'.Routes::USERS,
         [AuthController::class, 'getAllUsers']
     );
-    Route::get(
-        $userById,
-        [AuthController::class, 'getUser']
-    );
 
-    Route::put(
-        $userById.'/'.Routes::EMAIL,
-        [AuthController::class, 'setEmail']
-    );
-
-    Route::post(
-        $userById.'/'.Routes::TOKENS_COUNT,
-        [AuthController::class, 'setTokensCount']
-    );
-    Route::put(
-        $userById.'/'.Routes::TOKENS_COUNT,
-        [AuthController::class, 'addTokensCount']
-    );
-    Route::delete(
-        $userById.'/'.Routes::TOKENS_COUNT,
-        [AuthController::class, 'deleteTokensCount']
-    );
-
-    Route::get(
-        $userById.'/'.Routes::LICENSE_KEY,
-        [AuthController::class, 'getLicenseKey']
-    );
-    Route::delete(
-        $userById.'/'.Routes::LICENSE_KEY,
-        [AuthController::class, 'resetLicenseKey']
-    );
-
-    Route::put(
-        $userById.'/'.Routes::IS_DISABLED,
-        [AuthController::class, 'setIsDisabled']
-    );
-
-    Route::put(
-        $userById.'/'.Routes::IS_ADMIN,
-        [AuthController::class, 'setIsAdmin']
-    );
-
-    Route::put(
-        $userById.'/'.Routes::PASSWORD,
-        [AuthController::class, 'setPassword']
-    );
+    Route::prefix('/'.Routes::USERS.'/{'.Routes::USER_ID.'}')->group(function() {
+        Route::get(
+            '/',
+            [AuthController::class, 'getUser']
+        );
+    
+        Route::put(
+            '/'.Routes::EMAIL,
+            [AuthController::class, 'setEmail']
+        );
+    
+        Route::post(
+            '/'.Routes::TOKENS_COUNT,
+            [AuthController::class, 'setTokensCount']
+        );
+        Route::put(
+            '/'.Routes::TOKENS_COUNT,
+            [AuthController::class, 'addTokensCount']
+        );
+        Route::delete(
+            '/'.Routes::TOKENS_COUNT,
+            [AuthController::class, 'deleteTokensCount']
+        );
+    
+        Route::get(
+            '/'.Routes::LICENSE_KEY,
+            [AuthController::class, 'getLicenseKey']
+        );
+        Route::delete(
+            '/'.Routes::LICENSE_KEY,
+            [AuthController::class, 'resetLicenseKey']
+        );
+    
+        Route::put(
+            '/'.Routes::IS_DISABLED,
+            [AuthController::class, 'setIsDisabled']
+        );
+    
+        Route::put(
+            '/'.Routes::IS_ADMIN,
+            [AuthController::class, 'setIsAdmin']
+        );
+    
+        Route::put(
+            '/'.Routes::PASSWORD,
+            [AuthController::class, 'setPassword']
+        );
+    });
 });
 
 // Auth-protected rotues

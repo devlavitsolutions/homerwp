@@ -27,6 +27,24 @@ class AuthController extends Controller
         return $userId;
     }
 
+    /**
+     * Allows admin to create new User.
+     * POST /register
+     * 
+     * @bodyParam email Valid, unique email of new user.
+     * @bodyParam password Valid password, not encrypted.
+     * 
+     * @response 201 {
+     *  "user": {
+     *      "id": integer,
+     *      "email": string,
+     *      "licenseKey": string,
+     *  }
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function register(Request $request) {
         $fields = $request->validate(([
             Persist::EMAIL => Persist::VALIDATE_EMAIL,
@@ -46,10 +64,25 @@ class AuthController extends Controller
         return response($response, StatusCodes::CREATED->value);
     }
 
+    /**
+     * Allows User to login, most often admin.
+     * POST /login
+     * 
+     * @bodyParam email Valid email of existing user.
+     * @bodyParam password Valid password, not encrypted.
+     * 
+     * @response 200 {
+     *  "user": User
+     *  "token": JWT-like string
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function login(Request $request) {
         $fields = $request->validate([
-            Persist::EMAIL => Persist::VALIDATE_EMAIL,
-            Persist::PASSWORD => Persist::VALIDATE_PASSWORD,
+            Persist::EMAIL => Persist::VALIDATE_REQUIRED,
+            Persist::PASSWORD => Persist::VALIDATE_REQUIRED,
         ]);
 
         $user = User::where(Persist::EMAIL, $fields[Persist::EMAIL])->first();
@@ -75,16 +108,39 @@ class AuthController extends Controller
         return response($response, StatusCodes::OK->value);
     }
 
+    /**
+     * Allows User to clear all tokens.
+     * POST /logout
+     * 
+     * @response 200 {
+     *  "message": string
+     * }
+     * 
+     * @throws 401
+     */
     public function logout() {
         auth()->user()->tokens()->delete();
 
         return response([Labels::MESSAGE => Messages::LOGOUT_SUCCESS], StatusCodes::OK->value);
     }
 
+    /**
+     * Allows Admin to see all users basic info.
+     * GET /users[?page={index}]
+     * 
+     * @response 200 {
+     *  "data": [User]
+     * }
+     * 
+     * @throws 401
+     */
     public function getAllUsers(Request $request) {
         $pageName = 'page';
 
         $page = $request->page ?: Defaults::PAGE;
+        if ($page <= 0) {
+            $page = Defaults::PAGE;
+        }
 
         $users = User::paginate(Defaults::PAGE_SIZE, [
             Persist::ID,
@@ -97,6 +153,19 @@ class AuthController extends Controller
         return $users;
     }
 
+    /**
+     * Allows Admin to see one users detailed info.
+     * GET /users/{id}
+     * 
+     * @urlParam id User id.
+     * 
+     * @response 200 {
+     *  "user": User
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function getUser(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -107,6 +176,21 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to change email of a user.
+     * PUT /users/{id}/email
+     * 
+     * @urlParam id User id.
+     * @bodyParam email New, valid, email.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "email": New email
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function setEmail(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -126,6 +210,21 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to set how many tokens a user has.
+     * POST /users/{id}/tokens-count
+     * 
+     * @urlParam id User id.
+     * @bodyParam tokensCount How many tokens a user should have.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "tokensCount": New number of tokens available to the user
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function setTokensCount(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -145,6 +244,21 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to give more tokens to user.
+     * PUT /users/{id}/tokens-count
+     * 
+     * @urlParam id User id.
+     * @bodyParam tokensCount How many tokens a user should have.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "tokensCount": New number of tokens available to the user
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function addTokensCount(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -164,6 +278,20 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to reset user tokens to 0.
+     * DELETE /users/{id}/tokens-count
+     * 
+     * @urlParam id User id.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "tokensCount": 0
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function clearTokensCount(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -177,18 +305,47 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to see user license.
+     * GET /users/{id}/license-key
+     * 
+     * @urlParam id User id.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "licenseKey": User's current license
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function getLicenseKey(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
         $licenseKey = User::whereKey([$userId])
-            ->get([Persist::LICENSE_KEY]);
+            ->first([Persist::LICENSE_KEY]);
 
         return [
             Persist::ID => $userId,
-            Persist::LICENSE_KEY => $licenseKey
+            Persist::LICENSE_KEY => $licenseKey->license_key
         ];
     }
 
+    /**
+     * Allows Admin to change user's license key to new one.
+     * New license key will be generated on the server.
+     * DELETE /users/{id}/license-key
+     * 
+     * @urlParam id User id.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "licenseKey": User's new license
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function resetLicenseKey(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -205,6 +362,21 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to change user's enabled/disabled state.
+     * PUT /users/{id}/license-key
+     * 
+     * @urlParam id User id.
+     * @bodyParam isDisabled Boolean value indicating new state.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "isDisabled": User's new state
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function setIsDisabled(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -224,6 +396,22 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to change user's admin privilege.
+     * Can't remove last admin's role.
+     * PUT /users/{id}/is-admin
+     * 
+     * @urlParam id User id.
+     * @bodyParam isAdmin Boolean value indicating new state.
+     * 
+     * @response 200 {
+     *  "id": User id,
+     *  "isAdmin": User's new state
+     * }
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function setIsAdmin(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
@@ -248,6 +436,18 @@ class AuthController extends Controller
         ];
     }
 
+    /**
+     * Allows Admin to change user's password.
+     * PUT /users/{id}/password
+     * 
+     * @urlParam id User id.
+     * @bodyParam password New password. Must satisfy requirements.
+     * 
+     * @response 204
+     * 
+     * @throws 401
+     * @throws 422
+     */
     public function setPassword(Request $request) {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
