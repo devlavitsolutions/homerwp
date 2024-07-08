@@ -12,6 +12,7 @@ class Persist {
     const IS_DISABLED = 'is_disabled';
     const REMEMBER_TOKEN = 'remember_token';
 
+    const VALIDATE_REQUIRED = 'required';
     const VALIDATE_ID = 'required|numeric|exists:users,id';
     const VALIDATE_EMAIL = 'required|email:rfc,dns|unique:users,email';
     const VALIDATE_PASSWORD = 'required|string|min:8';
