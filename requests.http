@@ -1,0 +1,8 @@
+### Send a request to the GPT assistant to retrieve a response
+
+POST http://127.0.0.1:8000/api/openai/content
+Content-Type: application/json
+
+{
+  "message": "wordpress speed hosting"
+}
