@@ -13,6 +13,6 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         // todo: this is temporary! i'll remove this line after development
-				'chatgpt/send',
+				//'chatgpt/send',
     ];
 }

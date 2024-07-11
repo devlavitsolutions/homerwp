@@ -1,33 +1,47 @@
 <?php
 namespace App\Services;
-
 use GuzzleHttp\Client;
+use GuzzleHttp\Exception\GuzzleException;
 
 class OpenAIService
 {
-	private $client;
-	private $apiKey;
-	private $assistantId;
-	private $organizationId;
+    private const ERROR_MESSAGE = 'Sorry, we are unable to generate content at the moment. Please try again later.';
+    private $client;
+    private $apiKey;
+    private $assistantId;
+    private $organizationId;
 
-	public function __construct()
-	{
-		$this->client = new Client();
-		$this->apiKey = env('OPENAI_API_KEY');
-		$this->assistantId = env('CHATGPT_ASSISTANT_ID');
-		$this->organizationId = env('OPENAI_ORGANIZATION_ID');	
-	}
+    public function __construct()
+    {
+        $this->client = new Client();
+        $this->apiKey = env('OPENAI_API_KEY');
+        $this->assistantId = env('CHATGPT_ASSISTANT_ID');
+        $this->organizationId = env('OPENAI_ORGANIZATION_ID');    
+    }
 
-	private function getHeaders()
-	{
-		return [
-			'Authorization' => 'Bearer ' . $this->apiKey,
-			'OpenAI-Beta' => 'assistants=v2',
-			'OpenAI-Organization' => $this->organizationId
-		];
-	}
+    public function setClient($client)
+    {
+        $this->client = $client;
+    }
 
-	private function createThread()
+    private function getHeaders()
+    {
+        return [
+            'Authorization' => 'Bearer ' . $this->apiKey,
+            'OpenAI-Beta' => 'assistants=v2',
+            'OpenAI-Organization' => $this->organizationId
+        ];
+    }
+
+    private function handleError($statusCode)
+    {
+        return [
+            'error' => self::ERROR_MESSAGE,
+            'status_code' => $statusCode
+        ];
+    }
+
+    private function createThread()
     {
         try {
             $response = $this->client->post('https://api.openai.com/v1/threads', [
@@ -37,10 +51,10 @@ class OpenAIService
             if ($response->getStatusCode() == 200) {
                 return json_decode($response->getBody(), true);
             } else {
-                return ['error' => 'Non-successful response code: ' . $response->getStatusCode()];
+                return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return ['error' => $e->getMessage()];
+            return $this->handleError(500);
         }
     }
 
@@ -57,10 +71,10 @@ class OpenAIService
             if ($response->getStatusCode() == 200) {
                 return json_decode($response->getBody(), true);
             } else {
-                return ['error' => 'Non-successful response code: ' . $response->getStatusCode()];
+                return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return ['error' => $e->getMessage()];
+            return $this->handleError(500);
         }
     }
 
@@ -76,10 +90,10 @@ class OpenAIService
             if ($response->getStatusCode() == 200) {
                 return json_decode($response->getBody(), true);
             } else {
-                return ['error' => 'Non-successful response code: ' . $response->getStatusCode()];
+                return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return ['error' => $e->getMessage()];
+            return $this->handleError(500);
         }
     }
 
@@ -92,10 +106,10 @@ class OpenAIService
             if ($response->getStatusCode() == 200) {
                 return json_decode($response->getBody(), true);
             } else {
-                return ['error' => 'Non-successful response code: ' . $response->getStatusCode()];
+                return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return ['error' => $e->getMessage()];
+            return $this->handleError(500);
         }
     }
 
@@ -108,10 +122,10 @@ class OpenAIService
             if ($response->getStatusCode() == 200) {
                 return json_decode($response->getBody(), true);
             } else {
-                return ['error' => 'Non-successful response code: ' . $response->getStatusCode()];
+                return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return ['error' => $e->getMessage()];
+            return $this->handleError(500);
         }
     }
 
@@ -121,17 +135,14 @@ class OpenAIService
         if (isset($thread['error'])) {
             return $thread;
         }
-
         $messageResponse = $this->createMessage($thread['id'], $message);
         if (isset($messageResponse['error'])) {
             return $messageResponse;
         }
-
         $run = $this->runAssistant($thread['id']);
         if (isset($run['error'])) {
             return $run;
         }
-
         while ($run['status'] === 'queued' || $run['status'] === 'in_progress') {
             sleep(2);
             $run = $this->getRun($thread['id'], $run['id']);
@@ -139,7 +150,6 @@ class OpenAIService
                 return $run;
             }
         }
-
         if ($run['status'] === 'completed') {
             $response = $this->getThreadResponse($thread['id']);
             if (isset($response['error'])) {
@@ -147,7 +157,6 @@ class OpenAIService
             }
             return ['data' => $response['data'][0]['content'][0]['text']['value']];
         }
-
-        return ['error' => 'Failed to generate response'];
+        return $this->handleError(500);
     }
 }
