@@ -9,44 +9,55 @@ use Illuminate\Support\Str;
 
 class FrontendCase
 {
-
     public const CASE_SNAKE = 'snake';
     public const CASE_CAMEL = 'camel';
 
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
     public function handle(Request $request, Closure $next)
     {
-        $request->replace(
-            $this->convertKeysToCase(
-                self::CASE_SNAKE,
-                $request->post()
-            )
-        );
+        // Convert request keys to snake_case
+        $request->replace($this->convertArrayKeys($request->all(), self::CASE_SNAKE));
+
+        // Handle the response
         $response = $next($request);
+
+        // Convert response keys to camelCase
         if ($response instanceof JsonResponse) {
-            $response->setData(
-                $this->convertKeysToCase(
-                    self::CASE_CAMEL,
-                    json_decode($response->content(), true)
-                )
-            );
+            $originalContent = $response->getData(true);
+            $camelCasedContent = $this->convertArrayKeys($originalContent, self::CASE_CAMEL);
+            $response->setData($camelCasedContent);
         }
+
         return $response;
     }
-    private function convertKeysToCase(string $case, $data)
+
+    /**
+     * Convert the keys of an array to a specific case.
+     *
+     * @param  array  $array
+     * @param  string  $case
+     * @return array
+     */
+    protected function convertArrayKeys(array $array, string $case): array
     {
-        if (!is_array($data)) {
-            return $data;
+        $convertedArray = [];
+
+        foreach ($array as $key => $value) {
+            $newKey = $case === self::CASE_CAMEL ? Str::camel($key) : Str::snake($key);
+
+            if (is_array($value)) {
+                $value = $this->convertArrayKeys($value, $case);
+            }
+
+            $convertedArray[$newKey] = $value;
         }
 
-        $array = [];
-
-        foreach ($data as $key => $value) {
-            $array[Str::{$case}($key)] = is_array($value)
-                ? $this->convertKeysToCase($case, $value)
-                : $value;
-        }
-
-        return $array;
-
+        return $convertedArray;
     }
 }

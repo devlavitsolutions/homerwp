@@ -23,9 +23,9 @@ class User extends Authenticatable
         Persist::EMAIL,
         Persist::PASSWORD,
         Persist::LICENSE_KEY,
-        Persist::TOKENS_COUNT,
         Persist::IS_ADMIN,
         Persist::IS_DISABLED,
+        Persist::CID
     ];
 
     /**

@@ -25,12 +25,9 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            Persist::EMAIL => fake()->unique()->safeEmail(),
-            Persist::PASSWORD => static::$password ??= Generators::encryptPassword('password'),
-            Persist::REMEMBER_TOKEN => Str::random(10),
-            Persist::LICENSE_KEY => fake()->uuid(),
-            Persist::IS_ADMIN => fake()->boolean(),
-            Persist::IS_DISABLED => fake()->boolean(),
+            Persist::FREE_TOKENS => fake()->numberBetween(0, 4),
+            Persist::PAID_TOKENS => fake()->numberBetween(0, 100),
+            Persist::LAST_USED => fake()->dateTime(),
         ];
     }
 

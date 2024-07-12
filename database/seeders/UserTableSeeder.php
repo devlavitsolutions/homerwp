@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Constants\Persist;
 use App\Helpers\Generators;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -13,10 +14,10 @@ class UserTableSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('users')->insert([
-            'email' => 'stefan.jankovic@lavitsolutions.com',
-            'password' => Generators::encryptPassword('seedpassword'),
-            'is_admin' => true,
+        DB::table(Persist::USERS)->insert([
+            Persist::EMAIL => Persist::SEED_EMAIL,
+            Persist::PASSWORD => Generators::encryptPassword(Persist::SEED_PASSWORD),
+            Persist::IS_ADMIN => true,
         ]);
     }
 }
