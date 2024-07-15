@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
  */
 class UserFactory extends Factory
 {
+    private const DEFAULT_PASSWORD = 'password';
+
     /**
      * The current password being used by the factory.
      */
@@ -26,8 +28,8 @@ class UserFactory extends Factory
     {
         return [
             Persist::EMAIL => fake()->unique()->safeEmail(),
-            Persist::PASSWORD => static::$password ??= Generators::encryptPassword('password'),
-            Persist::REMEMBER_TOKEN => Str::random(10),
+            Persist::PASSWORD => static::$password ??= Generators::encryptPassword(self::DEFAULT_PASSWORD),
+            Persist::REMEMBER_TOKEN => fake()->uuid(),
             Persist::LICENSE_KEY => fake()->uuid(),
             Persist::IS_ADMIN => fake()->boolean(),
             Persist::IS_DISABLED => fake()->boolean(),

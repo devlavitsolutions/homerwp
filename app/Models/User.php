@@ -14,6 +14,9 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    private const VAR_BOOLEAN = 'boolean';
+    private const VAR_HASHED = 'hashed';
+
     /**
      * The attributes that are mass assignable.
      *
@@ -44,8 +47,8 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
-        Persist::PASSWORD => 'hashed',
-        Persist::IS_ADMIN => 'boolean',
-        Persist::IS_DISABLED => 'boolean',
+        Persist::PASSWORD => self::VAR_HASHED,
+        Persist::IS_ADMIN => self::VAR_BOOLEAN,
+        Persist::IS_DISABLED => self::VAR_BOOLEAN,
     ];
 }

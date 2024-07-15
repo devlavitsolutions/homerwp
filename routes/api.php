@@ -17,68 +17,75 @@ use App\Constants\Routes;
 |
 */
 
+const MIDDLEWARE_INDICATOR = 'middleware';
+const AUTH_MIDDLEWARE = 'auth:sanctum';
+const AUTH_ROLES = 'abilities';
+
 // Public routes
 
-Route::post('/'.Routes::LOGIN, [AuthController::class, 'login']);
+Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
 
 // Admin-protected routes
 
-Route::group(['middleware' => ['auth:sanctum', 'abilities:'.Roles::Admin->value]], function() {
+Route::group([MIDDLEWARE_INDICATOR => [
+    AUTH_MIDDLEWARE,
+    AUTH_ROLES . ':' . Roles::Admin->value
+]], function () {
     Route::post(
-        '/'.Routes::REGISTER,
+        '/' . Routes::REGISTER,
         [AuthController::class, 'register']
     );
 
     Route::get(
-        '/'.Routes::USERS,
+        '/' . Routes::USERS,
         [AuthController::class, 'getAllUsers']
     );
 
-    Route::prefix('/'.Routes::USERS.'/{'.Routes::USER_ID.'}')->group(function() {
+    Route::prefix('/' . Routes::USERS . '/{' . Routes::USER_ID . '}')->group(function () {
         Route::get(
             '/',
             [AuthController::class, 'getUser']
         );
-    
+
         Route::put(
-            '/'.Routes::EMAIL,
+            '/' . Routes::EMAIL,
             [AuthController::class, 'setEmail']
         );
-    
+
         Route::post(
-            '/'.Routes::TOKENS_COUNT,
+            '/' . Routes::TOKENS_COUNT,
             [AuthController::class, 'setTokensCount']
         );
         Route::put(
-            '/'.Routes::TOKENS_COUNT,
+            '/' . Routes::TOKENS_COUNT,
             [AuthController::class, 'addTokensCount']
         );
         Route::delete(
-            '/'.Routes::TOKENS_COUNT,
+            '/' . Routes::TOKENS_COUNT,
             [AuthController::class, 'deleteTokensCount']
         );
-    
+
         Route::get(
-            '/'.Routes::LICENSE_KEY,
+            '/' . Routes::LICENSE_KEY,
             [AuthController::class, 'getLicenseKey']
         );
         Route::delete(
-            '/'.Routes::LICENSE_KEY,
+            '/' . Routes::LICENSE_KEY,
             [AuthController::class, 'resetLicenseKey']
         );
-    
+
         Route::put(
-            '/'.Routes::IS_DISABLED,
+            '/' . Routes::IS_DISABLED,
             [AuthController::class, 'setIsDisabled']
         );
-    
+
         Route::put(
-            '/'.Routes::IS_ADMIN,
+            '/' . Routes::IS_ADMIN,
             [AuthController::class, 'setIsAdmin']
         );
-    
+
         Route::put(
-            '/'.Routes::PASSWORD,
+            '/' . Routes::PASSWORD,
             [AuthController::class, 'setPassword']
         );
     });
@@ -86,9 +93,9 @@ Route::group(['middleware' => ['auth:sanctum', 'abilities:'.Roles::Admin->value]
 
 // Auth-protected rotues
 
-Route::group(['middleware' => ['auth:sanctum']], function() {
+Route::group([MIDDLEWARE_INDICATOR => [AUTH_MIDDLEWARE]], function () {
     Route::post(
-        '/'.Routes::LOGOUT,
+        '/' . Routes::LOGOUT,
         [AuthController::class, 'logout']
     );
 });

@@ -20,12 +20,10 @@ class AuthController extends Controller
 {
     private function getValidUserIdFromRouteParams(Request $request)
     {
-        $USER_ID = 'userId';
-
         $userId = $request->route(Routes::USER_ID);
 
-        $request->merge([$USER_ID => $userId]);
-        $request->validate([$USER_ID => Persist::VALIDATE_ID]);
+        $request->merge([Routes::USER_ID => $userId]);
+        $request->validate([Routes::USER_ID => Persist::VALIDATE_ID]);
 
         return $userId;
     }
