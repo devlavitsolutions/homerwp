@@ -438,7 +438,7 @@ class AuthController extends Controller
 
     /**
      * Allows Admin to change user's enabled/disabled state.
-     * PUT /users/{id}/license-key
+     * PUT /users/{id}/is-disabled
      * 
      * @urlParam id User id.
      * @bodyParam isDisabled Boolean value indicating new state.
