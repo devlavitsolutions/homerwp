@@ -36,7 +36,7 @@ class OpenAIService
     private function handleError($statusCode)
     {
         return [
-            'error' => self::ERROR_MESSAGE,
+            'message' => self::ERROR_MESSAGE,
             'status_code' => $statusCode
         ];
     }
@@ -132,28 +132,28 @@ class OpenAIService
     public function getAssistantResponse($message)
     {
         $thread = $this->createThread();
-        if (isset($thread['error'])) {
-            return $thread;
+        if (isset($thread['status_code']) && $thread['status_code'] >= 400) {
+            return $this->handleError(500);
         }
         $messageResponse = $this->createMessage($thread['id'], $message);
-        if (isset($messageResponse['error'])) {
-            return $messageResponse;
+        if (isset($messageResponse['status_code']) && $messageResponse['status_code'] >= 400) {
+            return $this->handleError(500);
         }
         $run = $this->runAssistant($thread['id']);
-        if (isset($run['error'])) {
-            return $run;
+        if (isset($run['status_code']) && $run['status_code'] >= 400) {
+            return $this->handleError(500);
         }
         while ($run['status'] === 'queued' || $run['status'] === 'in_progress') {
             sleep(2);
             $run = $this->getRun($thread['id'], $run['id']);
-            if (isset($run['error'])) {
-                return $run;
+            if (isset($run['status_code']) && $run['status_code'] >= 400) {
+                return $this->handleError(500);
             }
         }
         if ($run['status'] === 'completed') {
             $response = $this->getThreadResponse($thread['id']);
-            if (isset($response['error'])) {
-                return $response;
+            if (isset($response['status_code']) && $response['status_code'] >= 400) {
+                return $this->handleError(500);
             }
             return ['data' => $response['data'][0]['content'][0]['text']['value']];
         }
