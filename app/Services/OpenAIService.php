@@ -14,9 +14,9 @@ class OpenAIService
     public function __construct()
     {
         $this->client = new Client();
-        $this->apiKey = env('OPENAI_API_KEY');
-        $this->assistantId = env('CHATGPT_ASSISTANT_ID');
-        $this->organizationId = env('OPENAI_ORGANIZATION_ID');    
+        $this->apiKey = config('services.openai.api_key');
+        $this->assistantId = config('services.openai.assistant_id');
+        $this->organizationId = config('services.openai.organization_id');    
     }
 
     public function setClient($client)

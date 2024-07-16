@@ -31,4 +31,10 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'openai' => [
+        'api_key' => env('OPENAI_API_KEY'),
+        'assistant_id' => env('CHATGPT_ASSISTANT_ID'),
+        'organization_id' => env('OPENAI_ORGANIZATION_ID'),
+    ],
+
 ];
