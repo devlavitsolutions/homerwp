@@ -6,6 +6,8 @@ use GuzzleHttp\Exception\GuzzleException;
 class OpenAIService
 {
     private const ERROR_MESSAGE = 'Sorry, we are unable to generate content at the moment. Please try again later.';
+    private const BASE_URL = 'https://api.openai.com/v1';
+
     private $client;
     private $apiKey;
     private $assistantId;
@@ -44,7 +46,7 @@ class OpenAIService
     private function createThread()
     {
         try {
-            $response = $this->client->post('https://api.openai.com/v1/threads', [
+            $response = $this->client->post(self::BASE_URL . '/threads', [
                 'headers' => $this->getHeaders(),
                 'json' => new \stdClass()
             ]);
@@ -61,7 +63,7 @@ class OpenAIService
     private function createMessage($threadId, $messageContent)
     {
         try {
-            $response = $this->client->post("https://api.openai.com/v1/threads/$threadId/messages", [
+            $response = $this->client->post(self::BASE_URL . "/threads/$threadId/messages", [
                 'headers' => $this->getHeaders(),
                 'json' => [
                     'role' => 'user',
@@ -81,7 +83,7 @@ class OpenAIService
     private function runAssistant($threadId)
     {
         try {
-            $response = $this->client->post("https://api.openai.com/v1/threads/$threadId/runs", [
+            $response = $this->client->post(self::BASE_URL . "/threads/$threadId/runs", [
                 'headers' => $this->getHeaders(),
                 'json' => [
                     'assistant_id' => $this->assistantId
@@ -100,7 +102,7 @@ class OpenAIService
     public function getRun($threadId, $runId)
     {
         try {
-            $response = $this->client->get("https://api.openai.com/v1/threads/$threadId/runs/$runId", [
+            $response = $this->client->get(self::BASE_URL . "/threads/$threadId/runs/$runId", [
                 'headers' => $this->getHeaders()
             ]);
             if ($response->getStatusCode() == 200) {
@@ -116,7 +118,7 @@ class OpenAIService
     private function getThreadResponse($threadId)
     {
         try {
-            $response = $this->client->get("https://api.openai.com/v1/threads/$threadId/messages", [
+            $response = $this->client->get(self::BASE_URL . "/threads/$threadId/messages", [
                 'headers' => $this->getHeaders()
             ]);
             if ($response->getStatusCode() == 200) {
