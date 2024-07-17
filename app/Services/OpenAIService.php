@@ -2,12 +2,12 @@
 namespace App\Services;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use App\Constants\Routes;
+use App\Constants\Messages;
+use Symfony\Component\HttpFoundation\Response;
 
 class OpenAIService
 {
-    private const ERROR_MESSAGE = 'Sorry, we are unable to generate content at the moment. Please try again later.';
-    private const BASE_URL = 'https://api.openai.com/v1';
-
     private $client;
     private $apiKey;
     private $assistantId;
@@ -35,130 +35,135 @@ class OpenAIService
         ];
     }
 
+    private function isError($response)
+    {
+        return isset($response['status_code']) && $response['status_code'] == Response::HTTP_INTERNAL_SERVER_ERROR;
+    }
+
     private function handleError($statusCode)
     {
         return [
-            'message' => self::ERROR_MESSAGE,
-            'status_code' => $statusCode
+            'message' => Messages::OPENAI_ERROR_MESSAGE,
+            'status_code' => Response::HTTP_INTERNAL_SERVER_ERROR
         ];
     }
 
     private function createThread()
     {
         try {
-            $response = $this->client->post(self::BASE_URL . '/threads', [
+            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS, [ 
                 'headers' => $this->getHeaders(),
                 'json' => new \stdClass()
             ]);
-            if ($response->getStatusCode() == 200) {
+            if ($response->getStatusCode() == Response::HTTP_OK) {
                 return json_decode($response->getBody(), true);
             } else {
                 return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return $this->handleError(500);
+            return $this->handleError();
         }
     }
 
     private function createMessage($threadId, $messageContent)
     {
         try {
-            $response = $this->client->post(self::BASE_URL . "/threads/$threadId/messages", [
+            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::MESSAGES, [ 
                 'headers' => $this->getHeaders(),
                 'json' => [
                     'role' => 'user',
                     'content' => $messageContent
                 ]
             ]);
-            if ($response->getStatusCode() == 200) {
+            if ($response->getStatusCode() == Response::HTTP_OK) {
                 return json_decode($response->getBody(), true);
             } else {
                 return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return $this->handleError(500);
+            return $this->handleError();
         }
     }
 
     private function runAssistant($threadId)
     {
         try {
-            $response = $this->client->post(self::BASE_URL . "/threads/$threadId/runs", [
+            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::RUNS, [ 
                 'headers' => $this->getHeaders(),
                 'json' => [
                     'assistant_id' => $this->assistantId
                 ]
             ]);
-            if ($response->getStatusCode() == 200) {
+            if ($response->getStatusCode() == Response::HTTP_OK) {
                 return json_decode($response->getBody(), true);
             } else {
                 return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return $this->handleError(500);
+            return $this->handleError();
         }
     }
 
-    public function getRun($threadId, $runId)
+    private function getRun($threadId, $runId)
     {
         try {
-            $response = $this->client->get(self::BASE_URL . "/threads/$threadId/runs/$runId", [
+            $response = $this->client->get(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::RUNS . "/$runId", [ 
                 'headers' => $this->getHeaders()
             ]);
-            if ($response->getStatusCode() == 200) {
+            if ($response->getStatusCode() == Response::HTTP_OK) {
                 return json_decode($response->getBody(), true);
             } else {
                 return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return $this->handleError(500);
+            return $this->handleError();
         }
     }
 
     private function getThreadResponse($threadId)
     {
         try {
-            $response = $this->client->get(self::BASE_URL . "/threads/$threadId/messages", [
+            $response = $this->client->get(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::MESSAGES, [ 
                 'headers' => $this->getHeaders()
             ]);
-            if ($response->getStatusCode() == 200) {
+            if ($response->getStatusCode() == Response::HTTP_OK) {
                 return json_decode($response->getBody(), true);
             } else {
                 return $this->handleError($response->getStatusCode());
             }
         } catch (GuzzleException $e) {
-            return $this->handleError(500);
+            return $this->handleError();
         }
     }
 
     public function getAssistantResponse($message)
     {
         $thread = $this->createThread();
-        if (isset($thread['status_code']) && $thread['status_code'] >= 400) {
-            return $this->handleError(500);
+        if ($this->isError($thread)) {
+            return $this->handleError();
         }
         $messageResponse = $this->createMessage($thread['id'], $message);
-        if (isset($messageResponse['status_code']) && $messageResponse['status_code'] >= 400) {
-            return $this->handleError(500);
+        if ($this->isError($messageResponse)) {
+            return $this->handleError();
         }
         $run = $this->runAssistant($thread['id']);
-        if (isset($run['status_code']) && $run['status_code'] >= 400) {
-            return $this->handleError(500);
+        if ($this->isError($run)) {
+            return $this->handleError();
         }
         while ($run['status'] === 'queued' || $run['status'] === 'in_progress') {
             sleep(2);
             $run = $this->getRun($thread['id'], $run['id']);
-            if (isset($run['status_code']) && $run['status_code'] >= 400) {
-                return $this->handleError(500);
+            if ($this->isError($run)) {
+                return $this->handleError();
             }
         }
         if ($run['status'] === 'completed') {
             $response = $this->getThreadResponse($thread['id']);
-            if (isset($response['status_code']) && $response['status_code'] >= 400) {
-                return $this->handleError(500);
+            if ($this->isError($response)) {
+                return $this->handleError();
             }
             return ['data' => $response['data'][0]['content'][0]['text']['value']];
         }
-        return $this->handleError(500);
+        return $this->handleError();
     }
 }
