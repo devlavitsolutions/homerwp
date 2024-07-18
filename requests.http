@@ -4,5 +4,7 @@ POST http://127.0.0.1:8000/api/content
 Content-Type: application/json
 
 {
-  "message": "wordpress speed hosting"
+	"keywords": "wordpress speed hosting",
+	"licence_key": "your licence key 2",
+	"website": "https://www.example.com"
 }

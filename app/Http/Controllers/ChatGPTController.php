@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Services\OpenAIService;
+use App\Models\Log;
 
 class ChatGPTController extends Controller
 {
@@ -16,8 +17,17 @@ class ChatGPTController extends Controller
 
     public function getAssistantResponse(Request $request)
     {
-        $message = $request->input('message');
-        $response = $this->openAIService->getAssistantResponse($message);
+        $keywords = $request->input('keywords');
+        $website = $request->input('website');
+        $licenceKey = $request->input('licence_key');
+        $response = $this->openAIService->getAssistantResponse($keywords);
+
+        Log::create([
+            'keywords' => $keywords,
+            'website' => $website,
+            'licence_key' => $licenceKey,
+            'response' => isset($response['data']) ? json_encode($response['data']) : null, 
+        ]);
 
         return response()->json($response);
     }
