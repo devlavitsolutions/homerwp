@@ -26,6 +26,9 @@ class Persist
     const VALIDATE_EMAIL = 'required|email:rfc,dns|unique:users,email';
     const VALIDATE_PASSWORD = 'required|string|min:8';
     const VALIDATE_PAID_TOKENS = 'required|numeric|gte:0';
+    const VALIDATE_KEYWORDS = 'required|string';
+    const VALIDATE_WEBSITE = 'required|url';
+    const VALIDATE_LICENSE_KEY = 'required|string';
 
     const SEED_EMAIL = 'stefan.jankovic@lavitsolutions.com';
     const SEED_PASSWORD = 'seedpas5word_CHANGE_IT';
