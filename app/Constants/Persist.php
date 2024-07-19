@@ -17,6 +17,9 @@ class Persist
     const FREE_TOKENS = 'free_tokens_used';
     const PAID_TOKENS = 'paid_tokens';
     const LAST_USED = 'last_used';
+    const KEYWORDS = 'keywords';
+    const WEBSITE = 'website';
+    const RESPONSE = 'response';
 
     const VALIDATE_REQUIRED = 'required';
     const VALIDATE_ID = 'required|numeric|exists:users,id';

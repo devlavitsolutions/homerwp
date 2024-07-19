@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -8,5 +9,5 @@ class Log extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['keywords', 'website', 'licence_key', 'response']; 
+    protected $fillable = ['keywords', 'website', 'license_key', 'response']; 
 }

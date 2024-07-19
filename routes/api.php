@@ -4,7 +4,7 @@ use App\Constants\Roles;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\ChatGPTController;
+use App\Http\Controllers\OpenAIController;
 use App\Constants\Routes;
 
 /*
@@ -26,7 +26,7 @@ use App\Constants\Routes;
 
 Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
 
-Route::post('/' . Routes::CONTENT, [ChatGPTController::class, 'getAssistantResponse']);
+Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
 
 // Admin-protected routes
 
