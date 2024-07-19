@@ -23,6 +23,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        Persist::ID,
         Persist::EMAIL,
         Persist::PASSWORD,
         Persist::LICENSE_KEY,
