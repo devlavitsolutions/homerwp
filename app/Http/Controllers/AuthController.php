@@ -28,6 +28,16 @@ class AuthController extends Controller
         return $userId;
     }
 
+    private function getValidUserLicenseKeyFromRouteParams(Request $request)
+    {
+        $licenseKey = $request->route(Routes::LICENSE_KEY);
+
+        $request->merge([Persist::LICENSE_KEY => $licenseKey]);
+        $request->validate([Persist::LICENSE_KEY => Persist::VALIDATE_EXISTING_LICENSE_KEY]);
+
+        return $licenseKey;
+    }
+
     private function checkIfDateBelongsToCurrentMonth(?DateTime $dateTimeLastUsed)
     {
         if ($dateTimeLastUsed === null) {
@@ -112,7 +122,7 @@ class AuthController extends Controller
             Persist::PASSWORD => Persist::VALIDATE_REQUIRED,
         ]);
 
-        $user = User::where(Persist::EMAIL, $fields[Persist::EMAIL])->first();
+        $user = User::where(Persist::EMAIL, $fields[Persist::EMAIL])->firstOrFail();
 
         if (
             !$user
@@ -175,35 +185,32 @@ class AuthController extends Controller
             $page = Defaults::PAGE;
         }
 
-        $users = User::paginate(Defaults::PAGE_SIZE, [
-            Persist::ID,
-            Persist::EMAIL,
-            Persist::IS_ADMIN,
-            Persist::IS_DISABLED
-        ], $pageName, $page);
+        $users = User::paginate(Defaults::PAGE_SIZE, ['*'], $pageName, $page);
 
         return $users;
     }
 
     /**
      * Allows Admin to see one users detailed info.
-     * GET /users/{id}
+     * GET /users/{license-key}
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * 
      * @response 200 {
      *  "user": User
      * }
      * 
      * @throws 401
+     * @throws 404
      * @throws 422
      */
     public function getUser(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
-        $user = User::whereKey([$userId])->first();
-        $token = Token::where(Persist::USER_ID, '=', $userId)
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+
+        $token = Token::where(Persist::USER_ID, '=', $user[Persist::ID])
             ->select([Persist::FREE_TOKENS, Persist::PAID_TOKENS, Persist::LAST_USED])
             ->first()
             ?: [
@@ -227,13 +234,13 @@ class AuthController extends Controller
 
     /**
      * Allows Admin to change email of a user.
-     * PUT /users/{id}/email
+     * PUT /users/{license-key}/email
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * @bodyParam email New, valid, email.
      * 
      * @response 200 {
-     *  "id": User id,
+     *  "licenseKey": License Key,
      *  "email": New email
      * }
      * 
@@ -242,7 +249,7 @@ class AuthController extends Controller
      */
     public function setEmail(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
         $fields = $request->validate(([
             Persist::EMAIL => Persist::VALIDATE_EMAIL,
@@ -250,25 +257,25 @@ class AuthController extends Controller
 
         $email = $fields[Persist::EMAIL];
 
-        User::whereKey([$userId])
+        User::where(Persist::LICENSE_KEY, '=', $licenseKey)
             ->limit(1)
             ->update([Persist::EMAIL => $email]);
 
         return [
-            Persist::ID => $userId,
+            Persist::LICENSE_KEY => $licenseKey,
             Persist::EMAIL => $email,
         ];
     }
 
     /**
      * Allows Admin to set how many tokens a user has.
-     * POST /users/{id}/tokens-count
+     * POST /users/{license-key}/tokens-count
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * @bodyParam tokensCount How many tokens a user should have.
      * 
      * @response 200 {
-     *  "id": User id,
+     *  "licenseKey": License Key,
      *  "tokensCount": New number of tokens available to the user
      * }
      * 
@@ -277,7 +284,7 @@ class AuthController extends Controller
      */
     public function setTokensCount(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
         $fields = $request->validate(([
             Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
@@ -285,31 +292,38 @@ class AuthController extends Controller
 
         $tokensCount = $fields[Persist::PAID_TOKENS];
 
-        Token::updateOrCreate(
-            [Persist::USER_ID => $userId],
-            [
-                Persist::USER_ID => $userId,
-                Persist::PAID_TOKENS => $tokensCount,
-                Persist::FREE_TOKENS => 0
-            ],
+        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
 
+        Token::updateOrCreate(
+            [Persist::USER_ID => $relatedUser[Persist::ID]],
+            [
+                Persist::LICENSE_KEY => $licenseKey,
+                Persist::PAID_TOKENS => $tokensCount,
+                Persist::IS_PREMIUM => true
+            ],
         );
 
+        User::where(Persist::ID, '=', $relatedUser[Persist::ID])
+            ->take(1)
+            ->update([Persist::IS_PREMIUM => true]);
+
+        error_log($relatedUser[Persist::ID]);
+
         return [
-            Persist::ID => $userId,
+            Persist::LICENSE_KEY => $licenseKey,
             Persist::PAID_TOKENS => (int)$tokensCount,
         ];
     }
 
     /**
      * Allows Admin to give more tokens to user.
-     * PUT /users/{id}/tokens-count
+     * PUT /users/{license-key}/tokens-count
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * @bodyParam tokensCount How many tokens a user should have.
      * 
      * @response 200 {
-     *  "id": User id,
+     *  "licenseKey": License Key,
      *  "tokensCount": New number of tokens available to the user
      * }
      * 
@@ -318,7 +332,7 @@ class AuthController extends Controller
      */
     public function addTokensCount(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
         $fields = $request->validate(([
             Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
@@ -326,11 +340,13 @@ class AuthController extends Controller
 
         $tokensCount = $fields[Persist::PAID_TOKENS];
 
+        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+
         $token = Token::firstOrNew(
-            [Persist::USER_ID => $userId],
+            [Persist::USER_ID => $relatedUser[Persist::ID]],
             [
                 Persist::FREE_TOKENS => 0,
-                Persist::PAID_TOKENS => 0
+                Persist::PAID_TOKENS => 0,
             ]
         );
         $token->save();
@@ -338,20 +354,22 @@ class AuthController extends Controller
 
         $newTokensCount = $token->fresh()[Persist::PAID_TOKENS];
 
+        User::find($relatedUser[Persist::ID])->update([Persist::IS_PREMIUM => true]);
+
         return [
-            Persist::ID => $userId,
+            Persist::LICENSE_KEY => $licenseKey,
             Persist::PAID_TOKENS => $newTokensCount,
         ];
     }
 
     /**
      * Allows Admin to reset user tokens to 0.
-     * DELETE /users/{id}/tokens-count
+     * DELETE /users/{license-key}/tokens-count
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * 
      * @response 200 {
-     *  "id": User id,
+     *  "licenseKey": License Key,
      *  "tokensCount": 0
      * }
      * 
@@ -360,20 +378,21 @@ class AuthController extends Controller
      */
     public function deleteTokensCount(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+
+        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
 
         Token::updateOrCreate(
-            [Persist::USER_ID => $userId],
+            [Persist::USER_ID => $relatedUser[Persist::ID]],
             [
                 Persist::PAID_TOKENS => 0,
-                Persist::USER_ID => $userId,
-                Persist::FREE_TOKENS => 0
+                Persist::LICENSE_KEY => $licenseKey,
             ],
 
         );
 
         return [
-            Persist::ID => $userId,
+            Persist::LICENSE_KEY => $licenseKey,
             Persist::PAID_TOKENS => 0,
         ];
     }
@@ -396,12 +415,11 @@ class AuthController extends Controller
     {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
-        $licenseKey = User::whereKey([$userId])
-            ->first([Persist::LICENSE_KEY]);
+        $licenseKey = User::findOrFail($userId);
 
         return [
             Persist::ID => $userId,
-            Persist::LICENSE_KEY => $licenseKey->license_key
+            Persist::LICENSE_KEY => $licenseKey[Persist::LICENSE_KEY]
         ];
     }
 
@@ -424,27 +442,26 @@ class AuthController extends Controller
     {
         $userId = $this->getValidUserIdFromRouteParams($request);
 
-        $licenseKey = Generators::generateLicenseKey();
+        $newLicenseKey = Generators::generateLicenseKey();
 
-        User::whereKey([$userId])
-            ->limit(1)
-            ->update([Persist::LICENSE_KEY => $licenseKey]);
+        User::findOrFail($userId)
+            ->update([Persist::LICENSE_KEY => $newLicenseKey]);
 
         return [
             Persist::ID => $userId,
-            Persist::LICENSE_KEY => $licenseKey
+            Persist::LICENSE_KEY => $newLicenseKey
         ];
     }
 
     /**
      * Allows Admin to change user's enabled/disabled state.
-     * PUT /users/{id}/is-disabled
+     * PUT /users/{license-key}/is-disabled
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * @bodyParam isDisabled Boolean value indicating new state.
      * 
      * @response 200 {
-     *  "id": User id,
+     *  "licenseKey": License Key,
      *  "isDisabled": User's new state
      * }
      * 
@@ -453,11 +470,11 @@ class AuthController extends Controller
      */
     public function setIsDisabled(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
         $newIsDisabledState = $request->input(Persist::IS_DISABLED);
 
-        $user = User::findOrFail($userId);
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->first();
 
         if ($newIsDisabledState && $user->is_admin) {
             abort(
@@ -469,7 +486,7 @@ class AuthController extends Controller
         $user->update([Persist::IS_DISABLED => $newIsDisabledState]);
 
         return [
-            Persist::ID => $userId,
+            Persist::LICENSE_KEY => $licenseKey,
             Persist::IS_DISABLED => $newIsDisabledState
         ];
     }
@@ -477,13 +494,13 @@ class AuthController extends Controller
     /**
      * Allows Admin to change user's admin privilege.
      * Can't remove last admin's role.
-     * PUT /users/{id}/is-admin
+     * PUT /users/{license-key}/is-admin
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * @bodyParam isAdmin Boolean value indicating new state.
      * 
      * @response 200 {
-     *  "id": User id,
+     *  "licenseKey": License Key,
      *  "isAdmin": User's new state
      * }
      * 
@@ -492,14 +509,14 @@ class AuthController extends Controller
      */
     public function setIsAdmin(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
-        $user = User::findOrFail($userId);
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->first();
 
         $newIsAdminState = $request->input(Persist::IS_ADMIN);
 
         if ($user->is_admin && !$newIsAdminState) {
-            $adminCount = User::where(Persist::IS_ADMIN, true)
+            $adminCount = User::where(Persist::IS_ADMIN, '=', true)
                 ->count();
 
             if ($adminCount <= 1) {
@@ -513,16 +530,16 @@ class AuthController extends Controller
         $user->update([Persist::IS_ADMIN => $newIsAdminState]);
 
         return [
-            Persist::ID => $userId,
+            Persist::LICENSE_KEY => $licenseKey,
             Persist::IS_ADMIN => $newIsAdminState
         ];
     }
 
     /**
      * Allows Admin to change user's password.
-     * PUT /users/{id}/password
+     * PUT /users/{license-key}/password
      * 
-     * @urlParam id User id.
+     * @urlParam license-key License Key.
      * @bodyParam password New password. Must satisfy requirements.
      * 
      * @response 204
@@ -532,13 +549,13 @@ class AuthController extends Controller
      */
     public function setPassword(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
         $fields = $request->validate(([
             Persist::PASSWORD => Persist::VALIDATE_PASSWORD,
         ]));
 
-        $user = User::findOrFail($userId);
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey);
 
         $user->update([Persist::PASSWORD => Generators::encryptPassword($fields[Persist::PASSWORD])]);
 
