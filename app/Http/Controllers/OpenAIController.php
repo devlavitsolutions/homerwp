@@ -50,7 +50,7 @@ class OpenAIController extends Controller
             Persist::KEYWORDS => $keywords,
             Persist::WEBSITE => $website,
             Persist::LICENSE_KEY => $licenceKey,
-            Persist::RESPONSE => isset($response['data']) ? json_encode($response['data']) : null,
+            Persist::RESPONSE => isset($response[Persist::DATA]) ? json_encode($response[Persist::DATA]) : null,
         ]);
 
         if ($token) {
