@@ -23,6 +23,7 @@ class Persist
     const WEBSITE = 'website';
     const RESPONSE = 'response';
     const UPDATED_AT = 'updated_at';
+    const DATA = 'data';
 
     const VALIDATE_REQUIRED = 'required';
     const VALIDATE_ID = 'required|numeric|exists:users,id';
