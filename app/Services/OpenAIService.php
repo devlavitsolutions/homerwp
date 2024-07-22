@@ -1,5 +1,7 @@
 <?php
+
 namespace App\Services;
+
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use App\Constants\Routes;
@@ -18,7 +20,7 @@ class OpenAIService
         $this->client = new Client();
         $this->apiKey = config('services.openai.api_key');
         $this->assistantId = config('services.openai.assistant_id');
-        $this->organizationId = config('services.openai.organization_id');    
+        $this->organizationId = config('services.openai.organization_id');
     }
 
     public function setClient($client)
@@ -40,18 +42,15 @@ class OpenAIService
         return isset($response['status_code']) && $response['status_code'] == Response::HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    private function handleError($statusCode)
+    private function handleError()
     {
-        return [
-            'message' => Messages::OPENAI_ERROR_MESSAGE,
-            'status_code' => Response::HTTP_INTERNAL_SERVER_ERROR
-        ];
+        abort(Response::HTTP_INTERNAL_SERVER_ERROR, Messages::OPENAI_ERROR_MESSAGE);
     }
 
     private function createThread()
     {
         try {
-            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS, [ 
+            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS, [
                 'headers' => $this->getHeaders(),
                 'json' => new \stdClass()
             ]);
@@ -68,7 +67,7 @@ class OpenAIService
     private function createMessage($threadId, $messageContent)
     {
         try {
-            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::MESSAGES, [ 
+            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::MESSAGES, [
                 'headers' => $this->getHeaders(),
                 'json' => [
                     'role' => 'user',
@@ -88,7 +87,7 @@ class OpenAIService
     private function runAssistant($threadId)
     {
         try {
-            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::RUNS, [ 
+            $response = $this->client->post(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::RUNS, [
                 'headers' => $this->getHeaders(),
                 'json' => [
                     'assistant_id' => $this->assistantId
@@ -107,7 +106,7 @@ class OpenAIService
     private function getRun($threadId, $runId)
     {
         try {
-            $response = $this->client->get(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::RUNS . "/$runId", [ 
+            $response = $this->client->get(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::RUNS . "/$runId", [
                 'headers' => $this->getHeaders()
             ]);
             if ($response->getStatusCode() == Response::HTTP_OK) {
@@ -123,7 +122,7 @@ class OpenAIService
     private function getThreadResponse($threadId)
     {
         try {
-            $response = $this->client->get(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::MESSAGES, [ 
+            $response = $this->client->get(Routes::OPENAI_BASE_URL . Routes::THREADS . "/$threadId" . Routes::MESSAGES, [
                 'headers' => $this->getHeaders()
             ]);
             if ($response->getStatusCode() == Response::HTTP_OK) {
