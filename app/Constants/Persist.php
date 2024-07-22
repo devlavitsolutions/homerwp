@@ -4,12 +4,14 @@ namespace App\Constants;
 
 class Persist
 {
+    const ACTIVATIONS = 'activations';
     const ID = 'id';
     const EMAIL = 'email';
     const PASSWORD = 'password';
     const LICENSE_KEY = 'license_key';
     const IS_ADMIN = 'is_admin';
     const IS_DISABLED = 'is_disabled';
+    const IS_PREMIUM = 'is_premium';
     const CID = 'cid';
     const REMEMBER_TOKEN = 'remember_token';
     const USERS = 'users';
@@ -20,6 +22,7 @@ class Persist
     const KEYWORDS = 'keywords';
     const WEBSITE = 'website';
     const RESPONSE = 'response';
+    const UPDATED_AT = 'updated_at';
 
     const VALIDATE_REQUIRED = 'required';
     const VALIDATE_ID = 'required|numeric|exists:users,id';
@@ -27,9 +30,14 @@ class Persist
     const VALIDATE_PASSWORD = 'required|string|min:8';
     const VALIDATE_PAID_TOKENS = 'required|numeric|gte:0';
     const VALIDATE_KEYWORDS = 'required|string';
-    const VALIDATE_WEBSITE = 'required|url';
     const VALIDATE_LICENSE_KEY = 'required|string';
+    const VALIDATE_WEBSITE = 'required|url|unique:activations,website';
+    const VALIDATE_EXISTING_EMAIL = 'required|email:rfc,dns|exists:users,email';
+    const VALIDATE_EXISTING_LICENSE_KEY = 'required|string|exists:users,license_key';
 
     const SEED_EMAIL = 'stefan.jankovic@lavitsolutions.com';
     const SEED_PASSWORD = 'seedpas5word_CHANGE_IT';
+
+    const ASC = 'asc';
+    const DESC = 'desc';
 }

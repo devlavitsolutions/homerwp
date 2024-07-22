@@ -1,10 +1,12 @@
 <?php
 
+use App\Constants\Labels;
 use App\Constants\Roles;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OpenAIController;
+use App\Http\Controllers\ActivationController;
 use App\Constants\Routes;
 
 /*
@@ -18,10 +20,6 @@ use App\Constants\Routes;
 |
 */
 
-// const MIDDLEWARE_INDICATOR = 'middleware';
-// const AUTH_MIDDLEWARE = 'auth:sanctum';
-// const AUTH_ROLES = 'abilities';
-
 // Public routes
 
 Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
@@ -30,23 +28,29 @@ Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantRespon
 
 // Admin-protected routes
 
-Route::group(['middleware' => [
-    'auth:sanctum',
-    'abilities' . ':' . Roles::Admin->value
+Route::group([Labels::MIDDLEWARE_INDICATOR => [
+    Labels::AUTH_MIDDLEWARE,
+    Labels::AUTH_ROLES . ':' . Roles::Admin->value
 ]], function () {
     Route::post(
         '/' . Routes::REGISTER,
         [AuthController::class, 'register']
     );
 
-    Route::get(
-        '/' . Routes::USERS,
-        [AuthController::class, 'getAllUsers']
-    );
-
     Route::prefix('/' . Routes::USERS . '/{' . Routes::USER_ID . '}')->group(function () {
         Route::get(
-            '/',
+            '/' . Routes::LICENSE_KEY,
+            [AuthController::class, 'getLicenseKey']
+        );
+        Route::delete(
+            '/' . Routes::LICENSE_KEY,
+            [AuthController::class, 'resetLicenseKey']
+        );
+    });
+
+    Route::prefix('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}')->group(function () {
+        Route::get(
+            '',
             [AuthController::class, 'getUser']
         );
 
@@ -68,15 +72,6 @@ Route::group(['middleware' => [
             [AuthController::class, 'deleteTokensCount']
         );
 
-        Route::get(
-            '/' . Routes::LICENSE_KEY,
-            [AuthController::class, 'getLicenseKey']
-        );
-        Route::delete(
-            '/' . Routes::LICENSE_KEY,
-            [AuthController::class, 'resetLicenseKey']
-        );
-
         Route::put(
             '/' . Routes::IS_DISABLED,
             [AuthController::class, 'setIsDisabled']
@@ -92,14 +87,23 @@ Route::group(['middleware' => [
             [AuthController::class, 'setPassword']
         );
     });
+
+    Route::get(
+        '/' . Routes::USERS,
+        [AuthController::class, 'getAllUsers']
+    );
+
+    Route::post(
+        '/' . Routes::ACTIVATION,
+        [ActivationController::class, 'postActivation']
+    );
 });
 
 // Auth-protected rotues
 
-Route::group(['middleware' => ['auth:sanctum']], function () {
+Route::group([Labels::MIDDLEWARE_INDICATOR => [Labels::AUTH_MIDDLEWARE]], function () {
     Route::post(
         '/' . Routes::LOGOUT,
         [AuthController::class, 'logout']
     );
 });
-

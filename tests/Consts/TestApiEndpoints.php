@@ -13,32 +13,32 @@ class TestApiEndpoints
     {
         return self::USERS . "?page={$pageIndex}";
     }
-    public static function USER_BY_ID(int $userId)
+    public static function USER_BY_IDENTIFICATOR(int|string $userIdentificator)
     {
-        return self::USERS . "/{$userId}";
+        return self::USERS . "/{$userIdentificator}";
     }
-    public static function USER_EMAIL(int $userId)
+    public static function USER_EMAIL(int|string $userIdentificator)
     {
-        return self::USER_BY_ID($userId) . '/email';
+        return self::USER_BY_IDENTIFICATOR($userIdentificator) . '/email';
     }
-    public static function USER_TOKENS(int $userId)
+    public static function USER_TOKENS(int|string $userIdentificator)
     {
-        return self::USER_BY_ID($userId) . '/tokens-count';
+        return self::USER_BY_IDENTIFICATOR($userIdentificator) . '/tokensCount';
     }
-    public static function USER_LICENSE_KEY(int $userId)
+    public static function USER_LICENSE_KEY(int|string $userIdentificator)
     {
-        return self::USER_BY_ID($userId) . '/license-key';
+        return self::USER_BY_IDENTIFICATOR($userIdentificator) . '/licenseKey';
     }
-    public static function USER_IS_DISABLED(int $userId)
+    public static function USER_IS_DISABLED(int|string $userIdentificator)
     {
-        return self::USER_BY_ID($userId) . '/is-disabled';
+        return self::USER_BY_IDENTIFICATOR($userIdentificator) . '/isDisabled';
     }
-    public static function USER_IS_ADMIN(int $userId)
+    public static function USER_IS_ADMIN(int|string $userIdentificator)
     {
-        return self::USER_BY_ID($userId) . '/is-admin';
+        return self::USER_BY_IDENTIFICATOR($userIdentificator) . '/isAdmin';
     }
-    public static function USER_PASSWORD(int $userId)
+    public static function USER_PASSWORD(int|string $userIdentificator)
     {
-        return self::USER_BY_ID($userId) . '/password';
+        return self::USER_BY_IDENTIFICATOR($userIdentificator) . '/password';
     }
 }

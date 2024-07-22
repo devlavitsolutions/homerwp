@@ -18,6 +18,7 @@ class UserTableSeeder extends Seeder
             Persist::EMAIL => Persist::SEED_EMAIL,
             Persist::PASSWORD => Generators::encryptPassword(Persist::SEED_PASSWORD),
             Persist::IS_ADMIN => true,
+            Persist::LICENSE_KEY => Generators::generateLicenseKey(),
         ]);
     }
 }
