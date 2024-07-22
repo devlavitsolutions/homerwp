@@ -19,14 +19,19 @@ class Persist
     const FREE_TOKENS = 'free_tokens_used';
     const PAID_TOKENS = 'paid_tokens';
     const LAST_USED = 'last_used';
+    const KEYWORDS = 'keywords';
     const WEBSITE = 'website';
+    const RESPONSE = 'response';
     const UPDATED_AT = 'updated_at';
+    const DATA = 'data';
 
     const VALIDATE_REQUIRED = 'required';
     const VALIDATE_ID = 'required|numeric|exists:users,id';
     const VALIDATE_EMAIL = 'required|email:rfc,dns|unique:users,email';
     const VALIDATE_PASSWORD = 'required|string|min:8';
     const VALIDATE_PAID_TOKENS = 'required|numeric|gte:0';
+    const VALIDATE_KEYWORDS = 'required|string';
+    const VALIDATE_LICENSE_KEY = 'required|string';
     const VALIDATE_WEBSITE = 'required|url|unique:activations,website';
     const VALIDATE_EXISTING_EMAIL = 'required|email:rfc,dns|exists:users,email';
     const VALIDATE_EXISTING_LICENSE_KEY = 'required|string|exists:users,license_key';

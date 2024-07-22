@@ -17,6 +17,11 @@ class Routes
     const IS_DISABLED = 'isDisabled';
     const IS_ADMIN = 'isAdmin';
     const PASSWORD = 'password';
+    const CONTENT = 'content';
 
+    const OPENAI_BASE_URL = 'https://api.openai.com/v1';
+    const THREADS = '/threads';
+    const MESSAGES = '/messages';
+    const RUNS = '/runs';
     const ACTIVATION = 'activation';
 }

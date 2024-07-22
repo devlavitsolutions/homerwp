@@ -5,6 +5,7 @@ use App\Constants\Roles;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\OpenAIController;
 use App\Http\Controllers\ActivationController;
 use App\Constants\Routes;
 
@@ -22,6 +23,8 @@ use App\Constants\Routes;
 // Public routes
 
 Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
+
+Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
 
 // Admin-protected routes
 
