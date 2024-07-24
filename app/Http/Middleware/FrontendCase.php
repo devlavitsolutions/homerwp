@@ -9,8 +9,8 @@ use Illuminate\Support\Str;
 
 class FrontendCase
 {
-    public const CASE_SNAKE = 'snake';
-    public const CASE_CAMEL = 'camel';
+    protected const CASE_SNAKE = 'snake';
+    protected const CASE_CAMEL = 'camel';
 
     /**
      * Handle an incoming request.

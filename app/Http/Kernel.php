@@ -44,6 +44,7 @@ class Kernel extends HttpKernel
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\FrontendCase::class,
             \App\Http\Middleware\RequestHeadersHandler::class,
+            \App\Http\Middleware\SanitizeResponse::class,
         ],
     ];
 
