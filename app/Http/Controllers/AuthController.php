@@ -52,12 +52,12 @@ class AuthController extends Controller
 
     private function calculateRemainingFreeTokens(
         ?int $freeTokensUsedThisMonth,
-        ?DateTime $dateTimelastUsed
+        ?string $dateTimelastUsed
     ) {
         $usedTokens = $freeTokensUsedThisMonth ?? 0;
 
-        if ($this->checkIfDateBelongsToCurrentMonth($dateTimelastUsed)) {
-            return max(Defaults::FREE_TOKENS_PER_MONTH - $freeTokensUsedThisMonth, 0);
+        if ($this->checkIfDateBelongsToCurrentMonth(new DateTime($dateTimelastUsed))) {
+            return max(Defaults::FREE_TOKENS_PER_MONTH - $$usedTokens, 0);
         } else {
             return Defaults::FREE_TOKENS_PER_MONTH;
         }
