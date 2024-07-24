@@ -26,9 +26,9 @@ Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
 
 Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
 
-Route::post('/' . Routes::ACTIVATIONS, [ActivationController::class, 'postActivation']);
-
 Route::post('/' . Routes::ACTIVATIONS_DELETE, [ActivationController::class, 'deleteActivation']);
+
+Route::post('/' . Routes::ACTIVATIONS, [ActivationController::class, 'postActivation']);
 
 Route::get('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}', [AuthController::class, 'getUser']);
 
