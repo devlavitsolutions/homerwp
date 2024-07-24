@@ -308,7 +308,7 @@ class AuthController extends Controller
             Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
         ]));
 
-        $tokensCount = $fields[Persist::PAID_TOKENS];
+        $tokensCount = (int)$fields[Persist::PAID_TOKENS];
 
         $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
 
@@ -325,11 +325,9 @@ class AuthController extends Controller
             ->take(1)
             ->update([Persist::IS_PREMIUM => true]);
 
-        error_log($relatedUser[Persist::ID]);
-
         return [
             Persist::LICENSE_KEY => $licenseKey,
-            Persist::PAID_TOKENS => (int)$tokensCount,
+            Persist::PAID_TOKENS => $tokensCount,
         ];
     }
 
@@ -356,7 +354,7 @@ class AuthController extends Controller
             Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
         ]));
 
-        $tokensCount = $fields[Persist::PAID_TOKENS];
+        $tokensCount = (int)$fields[Persist::PAID_TOKENS];
 
         $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
 

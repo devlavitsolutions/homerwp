@@ -79,20 +79,15 @@ class ActivationController extends Controller
 
     public function deleteActivation(Request $request)
     {
-        $licenseKey = $request->route(Routes::LICENSE_KEY);
-        $website = $request->route(Routes::WEBSITE);
-
-        $request->merge([
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::WEBSITE => $website
-        ]);
-
         $fields = $request->validate([
             Persist::LICENSE_KEY => Persist::VALIDATE_EXISTING_LICENSE_KEY,
             Persist::WEBSITE => Persist::VALIDATE_WEBSITE,
         ]);
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])->first();
+        $licenseKey = $fields[Persist::LICENSE_KEY];
+        $website = $fields[Persist::WEBSITE];
+
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->first();
 
         if (!$user || !$user[Persist::IS_PREMIUM]) {
             abort(
@@ -102,8 +97,8 @@ class ActivationController extends Controller
         }
 
         Activation
-            ::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])
-            ->where(Persist::WEBSITE, '=', $fields[Persist::WEBSITE])
+            ::where(Persist::LICENSE_KEY, '=', $licenseKey)
+            ->where(Persist::WEBSITE, '=', $website)
             ::delete();
 
         return response()->noContent();
