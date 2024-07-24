@@ -21,20 +21,13 @@ class ActivationController extends Controller
     public function postActivation(Request $request)
     {
         $fields = $request->validate(([
-            Persist::EMAIL => Persist::VALIDATE_EXISTING_EMAIL,
             Persist::LICENSE_KEY => Persist::VALIDATE_EXISTING_LICENSE_KEY,
             Persist::WEBSITE => Persist::VALIDATE_WEBSITE
         ]));
 
-        $user = User::where(Persist::EMAIL, '=', $fields[Persist::EMAIL])->first();
-
-        // If user does not own the license
-        if ($user[Persist::LICENSE_KEY] !== $fields[Persist::LICENSE_KEY]) {
-            abort(
-                Response::HTTP_FORBIDDEN,
-                Messages::USER_NOT_OWNER_OF_KEY
-            );
-        }
+        $user = User
+            ::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])
+            ->firstOrFail();
 
         $latestActivation = Activation
             ::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])
