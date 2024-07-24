@@ -51,9 +51,11 @@ class AuthController extends Controller
     }
 
     private function calculateRemainingFreeTokens(
-        int $freeTokensUsedThisMonth,
+        ?int $freeTokensUsedThisMonth,
         ?DateTime $dateTimelastUsed
     ) {
+        $usedTokens = $freeTokensUsedThisMonth ?? 0;
+
         if ($this->checkIfDateBelongsToCurrentMonth($dateTimelastUsed)) {
             return max(Defaults::FREE_TOKENS_PER_MONTH - $freeTokensUsedThisMonth, 0);
         } else {
@@ -208,27 +210,42 @@ class AuthController extends Controller
     {
         $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+        $user = User
+            ::where(
+                Persist::USERS . '.' . Persist::LICENSE_KEY,
+                '=',
+                $licenseKey
+            )
+            ->leftJoin(
+                Persist::TOKENS,
+                Persist::USERS . '.' . Persist::ID,
+                '=',
+                Persist::TOKENS . '.' . Persist::USER_ID,
+            )
+            ->select(
+                Persist::USERS . '.*',
+                Persist::TOKENS . '.' . Persist::FREE_TOKENS,
+                Persist::TOKENS . '.' . Persist::PAID_TOKENS,
+                Persist::TOKENS . '.' . Persist::LAST_USED,
+            )
+            ->with([Persist::ACTIVATIONS => function ($query) {
+                $query->select(Persist::WEBSITE, Persist::USER_ID);
+            }])
+            ->firstOrFail();
 
-        $token = Token::where(Persist::USER_ID, '=', $user[Persist::ID])
-            ->select([Persist::FREE_TOKENS, Persist::PAID_TOKENS, Persist::LAST_USED])
-            ->first()
-            ?: [
-                Persist::FREE_TOKENS => 0,
-                Persist::PAID_TOKENS => 0,
-                Persist::LAST_USED => null
-            ];
+        $user[Persist::WEBSITES] = array_map(function ($entry) {
+            return $entry[Persist::WEBSITE];
+        }, $user->activations->toArray());
+        unset($user[Persist::ACTIVATIONS]);
+
+        $user[Labels::FREE_TOKENS] = $this->calculateRemainingFreeTokens(
+            $user[Persist::FREE_TOKENS],
+            $user[Persist::LAST_USED]
+        );
+        unset($user[Persist::FREE_TOKENS]);
 
         return [
-            Labels::USER => [
-                ...$user->toArray(),
-                Persist::PAID_TOKENS => $token[Persist::PAID_TOKENS],
-                Labels::FREE_TOKENS => $this->calculateRemainingFreeTokens(
-                    $token[Persist::FREE_TOKENS],
-                    $token[Persist::LAST_USED]
-                ),
-                Persist::LAST_USED => $token[Persist::LAST_USED],
-            ]
+            Labels::USER => $user
         ];
     }
 

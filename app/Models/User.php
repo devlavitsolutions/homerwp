@@ -51,5 +51,11 @@ class User extends Authenticatable
         Persist::PASSWORD => self::VAR_HASHED,
         Persist::IS_ADMIN => self::VAR_BOOLEAN,
         Persist::IS_DISABLED => self::VAR_BOOLEAN,
+        Persist::IS_PREMIUM => self::VAR_BOOLEAN,
     ];
+
+    public function activations()
+    {
+        return $this->hasMany(Activation::class);
+    }
 }

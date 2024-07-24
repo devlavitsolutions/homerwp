@@ -26,6 +26,12 @@ Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
 
 Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
 
+Route::post('/' . Routes::ACTIVATION, [ActivationController::class, 'postActivation']);
+
+Route::delete('/' . Routes::ACTIVATION, [ActivationController::class, 'deleteActivation']);
+
+Route::get('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}', [AuthController::class, 'getUser']);
+
 // Admin-protected routes
 
 Route::group([Labels::MIDDLEWARE_INDICATOR => [
@@ -49,11 +55,6 @@ Route::group([Labels::MIDDLEWARE_INDICATOR => [
     });
 
     Route::prefix('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}')->group(function () {
-        Route::get(
-            '',
-            [AuthController::class, 'getUser']
-        );
-
         Route::put(
             '/' . Routes::EMAIL,
             [AuthController::class, 'setEmail']
@@ -91,11 +92,6 @@ Route::group([Labels::MIDDLEWARE_INDICATOR => [
     Route::get(
         '/' . Routes::USERS,
         [AuthController::class, 'getAllUsers']
-    );
-
-    Route::post(
-        '/' . Routes::ACTIVATION,
-        [ActivationController::class, 'postActivation']
     );
 });
 

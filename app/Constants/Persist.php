@@ -16,11 +16,13 @@ class Persist
     const REMEMBER_TOKEN = 'remember_token';
     const USERS = 'users';
     const USER_ID = 'user_id';
+    const TOKENS = 'tokens';
     const FREE_TOKENS = 'free_tokens_used';
     const PAID_TOKENS = 'paid_tokens';
     const LAST_USED = 'last_used';
     const KEYWORDS = 'keywords';
     const WEBSITE = 'website';
+    const WEBSITES = 'websites';
     const RESPONSE = 'response';
     const UPDATED_AT = 'updated_at';
     const DATA = 'data';
