@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Services\OpenAIService;
 use App\Models\Log;
 use App\Constants\Persist;
+use App\Models\Activation;
 use App\Models\Token;
 use App\Models\User;
 use Symfony\Component\HttpFoundation\Response;
@@ -31,25 +32,28 @@ class OpenAIController extends Controller
             Persist::LICENSE_KEY => Persist::VALIDATE_LICENSE_KEY,
         ]);
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])->firstOrFail();
+        $keywords = $fields[Persist::KEYWORDS];
+        $website = $fields[Persist::WEBSITE];
+        $licenseKey = $fields[Persist::LICENSE_KEY];
 
+        Activation
+            ::where(Persist::LICENSE_KEY, '=', $licenseKey)
+            ->where(Persist::WEBSITE, '=', $website)
+            ->firstOrFail();
+
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
         $token = Token::where(Persist::USER_ID, '=', $user[Persist::ID])->first();
-
         $token
             && $token[Persist::PAID_TOKENS] === 0
             && $token[Persist::FREE_TOKENS] >= Defaults::FREE_TOKENS_PER_MONTH
             && abort(Response::HTTP_PAYMENT_REQUIRED, Messages::PAYMENT_REQUIRED);
-
-        $keywords = $fields[Persist::KEYWORDS];
-        $website = $fields[Persist::WEBSITE];
-        $licenceKey = $fields[Persist::LICENSE_KEY];
 
         $response = $this->openAIService->getAssistantResponse($keywords);
 
         Log::create([
             Persist::KEYWORDS => $keywords,
             Persist::WEBSITE => $website,
-            Persist::LICENSE_KEY => $licenceKey,
+            Persist::LICENSE_KEY => $licenseKey,
             Persist::RESPONSE => isset($response[Persist::DATA]) ? json_encode($response[Persist::DATA]) : null,
         ]);
 
