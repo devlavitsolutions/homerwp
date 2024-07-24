@@ -38,7 +38,7 @@ class AuthController extends Controller
         return $licenseKey;
     }
 
-    private function checkIfDateBelongsToCurrentMonth(?DateTime $dateTimeLastUsed)
+    private function checkIfDateBelongsToCurrentMonth(?string $dateTimeLastUsed)
     {
         if ($dateTimeLastUsed === null) {
             return false;
@@ -46,8 +46,9 @@ class AuthController extends Controller
 
         $currentDate = new DateTime();
         $startOfMonth = $currentDate->setTime(0, 0, 0);
+        $lastDateTime = new DateTime($dateTimeLastUsed);
 
-        return $dateTimeLastUsed >= $startOfMonth;
+        return $lastDateTime >= $startOfMonth;
     }
 
     private function calculateRemainingFreeTokens(
@@ -56,7 +57,7 @@ class AuthController extends Controller
     ) {
         $usedTokens = $freeTokensUsedThisMonth ?? 0;
 
-        if ($this->checkIfDateBelongsToCurrentMonth(new DateTime($dateTimelastUsed))) {
+        if ($this->checkIfDateBelongsToCurrentMonth($dateTimelastUsed)) {
             return max(Defaults::FREE_TOKENS_PER_MONTH - $$usedTokens, 0);
         } else {
             return Defaults::FREE_TOKENS_PER_MONTH;
