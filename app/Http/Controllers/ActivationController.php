@@ -96,10 +96,12 @@ class ActivationController extends Controller
             );
         }
 
-        Activation
+        $activation = Activation
             ::where(Persist::LICENSE_KEY, '=', $licenseKey)
             ->where(Persist::WEBSITE, '=', $website)
-            ->deleteOrFail();
+            ->firstOrFail();
+
+        $activation->delete();
 
         return response()->noContent();
     }
