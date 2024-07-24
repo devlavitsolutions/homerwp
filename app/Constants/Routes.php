@@ -23,5 +23,6 @@ class Routes
     const THREADS = '/threads';
     const MESSAGES = '/messages';
     const RUNS = '/runs';
-    const ACTIVATION = 'activation';
+    const ACTIVATIONS = 'activations';
+    const ACTIVATIONS_DELETE = 'activations/delete';
 }
