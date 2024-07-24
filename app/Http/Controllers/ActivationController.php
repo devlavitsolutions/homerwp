@@ -81,7 +81,7 @@ class ActivationController extends Controller
     {
         $fields = $request->validate([
             Persist::LICENSE_KEY => Persist::VALIDATE_EXISTING_LICENSE_KEY,
-            Persist::WEBSITE => Persist::VALIDATE_WEBSITE,
+            Persist::WEBSITE => Persist::VALIDATE_WEBSITE_EXISTS,
         ]);
 
         $licenseKey = $fields[Persist::LICENSE_KEY];
@@ -99,7 +99,7 @@ class ActivationController extends Controller
         Activation
             ::where(Persist::LICENSE_KEY, '=', $licenseKey)
             ->where(Persist::WEBSITE, '=', $website)
-            ::delete();
+            ->deleteOrFail();
 
         return response()->noContent();
     }

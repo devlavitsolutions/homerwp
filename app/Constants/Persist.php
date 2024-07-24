@@ -35,6 +35,7 @@ class Persist
     const VALIDATE_KEYWORDS = 'required|string';
     const VALIDATE_LICENSE_KEY = 'required|string';
     const VALIDATE_WEBSITE = 'required|url|unique:activations,website';
+    const VALIDATE_WEBSITE_EXISTS = 'required|url|exists:activations,website';
     const VALIDATE_EXISTING_EMAIL = 'required|email:rfc,dns|exists:users,email';
     const VALIDATE_EXISTING_LICENSE_KEY = 'required|string|exists:users,license_key';
 
