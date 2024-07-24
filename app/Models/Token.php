@@ -35,7 +35,9 @@ class Token extends Model
      *
      * @var array<string, string>
      */
-    protected $casts = [];
+    protected $casts = [
+        Persist::LAST_USED => 'datetime'
+    ];
 
     public $timestamps = false;
 }
