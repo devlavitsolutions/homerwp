@@ -28,7 +28,7 @@ class OpenAIController extends Controller
         // Automatically throws a ValidationException and return a 422 Unprocessable Entity response, if not validated
         $fields = $request->validate([
             Persist::KEYWORDS => Persist::VALIDATE_KEYWORDS,
-            Persist::WEBSITE => Persist::VALIDATE_WEBSITE,
+            Persist::WEBSITE => Persist::VALIDATE_WEBSITE_EXISTS,
             Persist::LICENSE_KEY => Persist::VALIDATE_LICENSE_KEY,
         ]);
 
