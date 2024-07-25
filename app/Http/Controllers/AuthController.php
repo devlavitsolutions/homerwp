@@ -58,7 +58,7 @@ class AuthController extends Controller
         $usedTokens = $freeTokensUsedThisMonth ?? 0;
 
         if ($this->checkIfDateBelongsToCurrentMonth($dateTimelastUsed)) {
-            return max(Defaults::FREE_TOKENS_PER_MONTH - $$usedTokens, 0);
+            return max(Defaults::FREE_TOKENS_PER_MONTH - $usedTokens, 0);
         } else {
             return Defaults::FREE_TOKENS_PER_MONTH;
         }
