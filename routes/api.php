@@ -20,18 +20,6 @@ use App\Constants\Routes;
 |
 */
 
-// Public routes
-
-Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
-
-Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
-
-Route::post('/' . Routes::ACTIVATIONS_DELETE, [ActivationController::class, 'deleteActivation']);
-
-Route::post('/' . Routes::ACTIVATIONS, [ActivationController::class, 'postActivation']);
-
-Route::get('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}', [AuthController::class, 'getUser']);
-
 // Admin-protected routes
 
 Route::group([Labels::MIDDLEWARE_INDICATOR => [
@@ -60,11 +48,11 @@ Route::group([Labels::MIDDLEWARE_INDICATOR => [
             [AuthController::class, 'setEmail']
         );
 
-        Route::post(
+        Route::put(
             '/' . Routes::TOKENS_COUNT,
             [AuthController::class, 'setTokensCount']
         );
-        Route::put(
+        Route::post(
             '/' . Routes::TOKENS_COUNT,
             [AuthController::class, 'addTokensCount']
         );
@@ -103,3 +91,15 @@ Route::group([Labels::MIDDLEWARE_INDICATOR => [Labels::AUTH_MIDDLEWARE]], functi
         [AuthController::class, 'logout']
     );
 });
+
+// Public routes
+
+Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
+
+Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
+
+Route::post('/' . Routes::ACTIVATIONS_DELETE, [ActivationController::class, 'deleteActivation']);
+
+Route::post('/' . Routes::ACTIVATIONS, [ActivationController::class, 'postActivation']);
+
+Route::get('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}', [AuthController::class, 'getUser']);

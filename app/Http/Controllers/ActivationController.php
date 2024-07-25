@@ -2,10 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\Consts;
+use App\Constants\Defaults;
 use App\Constants\Messages;
 use App\Constants\Persist;
-use App\Constants\Routes;
 use App\Models\Activation;
 use App\Models\User;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,9 +14,51 @@ use Nette\Utils\DateTime;
 
 class ActivationController extends Controller
 {
+    private function getUserByLicenseKey(string $licenseKey): User
+    {
+        return User
+            ::where(Persist::LICENSE_KEY, '=', $licenseKey)
+            ->firstOrFail();
+    }
 
-    // TODO
-    // Return user details, along with paid and free tokens
+    private function getLatestActivationByLicenseKey(string $licenseKey): ?Activation
+    {
+        return Activation
+            ::where(Persist::LICENSE_KEY, '=', $licenseKey)
+            ->orderBy(Persist::UPDATED_AT, Persist::DESC)
+            ->first();
+    }
+
+    private function validateUserIsPremiumOrHaventActivatedRecently(
+        User $user,
+        ?Activation $latestActivation,
+    ) {
+        $currentDate = new DateTime();
+        $requiredInterval = new DateInterval(Defaults::PERIOD_BETWEEN_ACTIVATIONS_FOR_FREE_USER);
+        $oneMonthAgo = (clone $currentDate)->sub($requiredInterval);
+        $latestActivationDateTime = new DateTime($latestActivation[Persist::UPDATED_AT]);
+
+        if (
+            !$user[Persist::IS_PREMIUM]
+            && $latestActivation
+            && $latestActivationDateTime >= $oneMonthAgo
+        ) {
+            abort(
+                Response::HTTP_FORBIDDEN,
+                Messages::PREMIUM_CONTENT
+            );
+        }
+    }
+
+    private function deleteActivationIfUserIsFree(User $user, $licenseKey)
+    {
+        if (!$user[Persist::IS_PREMIUM]) {
+            Activation
+                ::where(Persist::LICENSE_KEY, '=', $licenseKey)
+                ->delete();
+        }
+    }
+
     public function postActivation(Request $request)
     {
         $fields = $request->validate(([
@@ -25,49 +66,22 @@ class ActivationController extends Controller
             Persist::WEBSITE => Persist::VALIDATE_WEBSITE
         ]));
 
-        $user = User
-            ::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])
-            ->firstOrFail();
+        $licenseKey = $fields[Persist::LICENSE_KEY];
+        $user = $this->getUserByLicenseKey($licenseKey);
+        $latestActivation = $this->getLatestActivationByLicenseKey($licenseKey);
 
-        $latestActivation = Activation
-            ::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])
-            ->orderBy(Persist::UPDATED_AT, Persist::DESC)
-            ->first();
+        $this->validateUserIsPremiumOrHaventActivatedRecently($user, $latestActivation);
 
-        $currentDate = new DateTime();
-        $oneMonthAgo = (clone $currentDate)->sub(new DateInterval(Consts::ONE_MONTH_INTERVAL));
+        $this->deleteActivationIfUserIsFree($user, $licenseKey);
 
-        // If user is not premium
-        // and if user already activated a website
-        // and if activation happened less than one month ago...
-        if (
-            !$user[Persist::IS_PREMIUM]
-            && $latestActivation
-            && new DateTime($latestActivation[Persist::UPDATED_AT]) >= $oneMonthAgo
-        ) {
-            // ... then throw error
-            abort(
-                Response::HTTP_FORBIDDEN,
-                Messages::PREMIUM_CONTENT
-            );
-        }
-
-        // If user is not premium, first delete old activation
-        if (!$user[Persist::IS_PREMIUM]) {
-            Activation
-                ::where(Persist::LICENSE_KEY, '=', $fields[Persist::LICENSE_KEY])
-                ->delete();
-        }
-
-        // Then create new activation
         Activation::create([
             ...$fields,
             Persist::USER_ID => $user[Persist::ID],
         ]);
 
-        return response([
+        return [
             Persist::ACTIVATIONS => $fields
-        ]);
+        ];
     }
 
     public function deleteActivation(Request $request)
@@ -80,9 +94,9 @@ class ActivationController extends Controller
         $licenseKey = $fields[Persist::LICENSE_KEY];
         $website = $fields[Persist::WEBSITE];
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->first();
+        $user = $this->getUserByLicenseKey($licenseKey);
 
-        if (!$user || !$user[Persist::IS_PREMIUM]) {
+        if (!$user[Persist::IS_PREMIUM]) {
             abort(
                 Response::HTTP_FORBIDDEN,
                 Messages::PREMIUM_CONTENT
