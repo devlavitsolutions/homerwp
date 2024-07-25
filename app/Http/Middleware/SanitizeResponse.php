@@ -2,7 +2,7 @@
 
 namespace App\Http\Middleware;
 
-use App\Constants\Consts;
+use App\Constants\Defaults;
 use App\Constants\Labels;
 use App\Constants\Messages;
 use Closure;
@@ -25,7 +25,7 @@ class SanitizeResponse
         // Handle the response
         $response = $next($request);
 
-        if (App::environment(Consts::ENV_PRODUCTION)) {
+        if (App::environment(Defaults::ENV_PRODUCTION)) {
             if ($response instanceof JsonResponse) {
                 $status = $response->status();
                 if ($status >= Response::HTTP_INTERNAL_SERVER_ERROR) {

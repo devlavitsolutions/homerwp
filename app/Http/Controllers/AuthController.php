@@ -64,6 +64,25 @@ class AuthController extends Controller
         }
     }
 
+    private function validateTokensEndpoint(Request $request)
+    {
+        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+
+        $fields = $request->validate(([
+            Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
+        ]));
+
+        $paidTokens = (int)$fields[Persist::PAID_TOKENS];
+
+        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+
+        return [
+            Persist::LICENSE_KEY => $licenseKey,
+            Persist::PAID_TOKENS => $paidTokens,
+            Persist::USER_ID => $relatedUser[Persist::ID],
+        ];
+    }
+
     /**
      * Allows admin to create new User.
      * POST /register
@@ -129,33 +148,29 @@ class AuthController extends Controller
 
         if (
             !$user
-            || !Generators::checkPassword($fields[Persist::PASSWORD], $user->password)
+            || !Generators::checkPassword($fields[Persist::PASSWORD], $user[Persist::PASSWORD])
         ) {
-            return response(
-                [Labels::MESSAGE => Messages::BAD_CREDENTIALS],
-                Response::HTTP_UNAUTHORIZED
+            abort(
+                Response::HTTP_UNAUTHORIZED,
+                Messages::BAD_CREDENTIALS,
             );
         }
 
-        $abilities = $user->is_admin ? [Roles::Admin->value] : [];
+        $abilities = $user[Persist::IS_ADMIN] ? [Roles::Admin->value] : [];
 
-        $token = $user->createToken($user->email, $abilities)->plainTextToken;
+        $token = $user->createToken($user[Persist::EMAIL], $abilities)->plainTextToken;
 
-        $response = [
+        return [
             Labels::USER => $user,
             Labels::TOKEN => $token
         ];
-
-        return response($response, Response::HTTP_OK);
     }
 
     /**
      * Allows User to clear all tokens.
      * POST /logout
      * 
-     * @response 200 {
-     *  "message": string
-     * }
+     * @response 204
      * 
      * @throws 401
      */
@@ -163,10 +178,7 @@ class AuthController extends Controller
     {
         auth()->user()->tokens()->delete();
 
-        return response(
-            [Labels::MESSAGE => Messages::LOGOUT_SUCCESS],
-            Response::HTTP_OK,
-        );
+        return response()->noContent();
     }
 
     /**
@@ -302,32 +314,27 @@ class AuthController extends Controller
      */
     public function setTokensCount(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
-
-        $fields = $request->validate(([
-            Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
-        ]));
-
-        $tokensCount = (int)$fields[Persist::PAID_TOKENS];
-
-        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+        $variables = $this->validateTokensEndpoint($request);
+        $licenseKey = $variables[Persist::LICENSE_KEY];
+        $paidTokens = $variables[Persist::PAID_TOKENS];
+        $userId = $variables[Persist::USER_ID];
 
         Token::updateOrCreate(
-            [Persist::USER_ID => $relatedUser[Persist::ID]],
+            [Persist::USER_ID => $userId],
             [
                 Persist::LICENSE_KEY => $licenseKey,
-                Persist::PAID_TOKENS => $tokensCount,
+                Persist::PAID_TOKENS => $paidTokens,
                 Persist::IS_PREMIUM => true
             ],
         );
 
-        User::where(Persist::ID, '=', $relatedUser[Persist::ID])
+        User::where(Persist::ID, '=', $userId)
             ->take(1)
             ->update([Persist::IS_PREMIUM => true]);
 
         return [
             Persist::LICENSE_KEY => $licenseKey,
-            Persist::PAID_TOKENS => $tokensCount,
+            Persist::PAID_TOKENS => $paidTokens,
         ];
     }
 
@@ -348,29 +355,24 @@ class AuthController extends Controller
      */
     public function addTokensCount(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
-
-        $fields = $request->validate(([
-            Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
-        ]));
-
-        $tokensCount = (int)$fields[Persist::PAID_TOKENS];
-
-        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+        $variables = $this->validateTokensEndpoint($request);
+        $licenseKey = $variables[Persist::LICENSE_KEY];
+        $paidTokens = $variables[Persist::PAID_TOKENS];
+        $userId = $variables[Persist::USER_ID];
 
         $token = Token::firstOrNew(
-            [Persist::USER_ID => $relatedUser[Persist::ID]],
+            [Persist::USER_ID => $userId],
             [
                 Persist::FREE_TOKENS => 0,
                 Persist::PAID_TOKENS => 0,
             ]
         );
         $token->save();
-        $token->increment(Persist::PAID_TOKENS, $tokensCount);
+        $token->increment(Persist::PAID_TOKENS, $paidTokens);
 
         $newTokensCount = $token->fresh()[Persist::PAID_TOKENS];
 
-        User::find($relatedUser[Persist::ID])->update([Persist::IS_PREMIUM => true]);
+        User::find($userId)->update([Persist::IS_PREMIUM => true]);
 
         return [
             Persist::LICENSE_KEY => $licenseKey,
@@ -490,9 +492,9 @@ class AuthController extends Controller
 
         $newIsDisabledState = $request->input(Persist::IS_DISABLED);
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->first();
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
 
-        if ($newIsDisabledState && $user->is_admin) {
+        if ($newIsDisabledState && $user[Persist::IS_ADMIN]) {
             abort(
                 Response::HTTP_UNPROCESSABLE_ENTITY,
                 Messages::BAD_REQUEST_DISABLE_ADMIN,
@@ -527,11 +529,11 @@ class AuthController extends Controller
     {
         $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->first();
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
 
         $newIsAdminState = $request->input(Persist::IS_ADMIN);
 
-        if ($user->is_admin && !$newIsAdminState) {
+        if ($user[Persist::IS_ADMIN] && !$newIsAdminState) {
             $adminCount = User::where(Persist::IS_ADMIN, '=', true)
                 ->count();
 
@@ -567,13 +569,15 @@ class AuthController extends Controller
     {
         $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
 
-        $fields = $request->validate(([
+        $fields = $request->validate([
             Persist::PASSWORD => Persist::VALIDATE_PASSWORD,
-        ]));
+        ]);
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey);
+        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->take(1);
 
-        $user->update([Persist::PASSWORD => Generators::encryptPassword($fields[Persist::PASSWORD])]);
+        $user->update([
+            Persist::PASSWORD => Generators::encryptPassword($fields[Persist::PASSWORD])
+        ]);
 
         return response()->noContent();
     }

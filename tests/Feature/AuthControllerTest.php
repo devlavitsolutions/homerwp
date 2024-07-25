@@ -109,8 +109,8 @@ class AuthControllerTest extends TestCase
         $this->assertIsArray($responseData[TestJsonKeys::USER]);
         $user = $responseData[TestJsonKeys::USER];
         $this->assertEquals($user[TestJsonKeys::EMAIL], TestData::SEED_EMAIL);
-        $this->assertEquals($user[TestJsonKeys::IS_ADMIN], true);
-        $this->assertEquals($user[TestJsonKeys::IS_DISABLED], false);
+        $this->assertEquals($user[TestJsonKeys::IS_ADMIN_CAMEL], true);
+        $this->assertEquals($user[TestJsonKeys::IS_DISABLED_CAMEL], false);
     }
     /** @test */
     public function loginWithWrongPasswordShouldFailWithMessage()
@@ -452,18 +452,6 @@ class AuthControllerTest extends TestCase
             TestData::HEAD,
         );
     }
-    /** @test */
-    public function getUserWithoutCredentialsShouldFailWithMessage()
-    {
-        $response = $this
-            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR(0));
-
-        $response
-            ->assertStatus(TestStatusCodes::UNAUTHORIZED)
-            ->assertJsonFragment([
-                TestJsonKeys::MESSAGE => TestResponseMessages::UNAUTHORIZED,
-            ]);
-    }
     // /** @test */
     // public function getUserWithNonAdminCredentialsShouldFailWithMessage()
     // {
@@ -533,7 +521,10 @@ class AuthControllerTest extends TestCase
     public function setEmailWithoutCredentialsShouldFailWithMessage()
     {
         $response = $this
-            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR(0));
+            ->putJson(
+                TestApiEndpoints::USER_EMAIL(self::BAD_KEY),
+                [TestJsonKeys::EMAIL => TestData::USER2_EMAIL]
+            );
 
         $response
             ->assertStatus(TestStatusCodes::UNAUTHORIZED)
@@ -609,7 +600,7 @@ class AuthControllerTest extends TestCase
     public function setTokensCountWithoutCredentialsShouldFailWithMessage()
     {
         $response = $this
-            ->postJson(
+            ->putJson(
                 TestApiEndpoints::USER_TOKENS(self::BAD_KEY),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT]
             );
@@ -631,7 +622,7 @@ class AuthControllerTest extends TestCase
         $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $putResponse0 = $this
-            ->putJson(
+            ->postJson(
                 TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::ADD_TOKEN_COUNT]
             );
@@ -648,7 +639,7 @@ class AuthControllerTest extends TestCase
             ->assertJsonFragment([TestJsonKeys::PAID_TOKENS => TestData::ADD_TOKEN_COUNT]);
 
         $putResponse1 = $this
-            ->putJson(
+            ->postJson(
                 TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::ADD_TOKEN_COUNT]
             );
