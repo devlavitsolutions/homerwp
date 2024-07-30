@@ -6,4 +6,5 @@ class Defaults {
     const PAGE = 1;
     const PAGE_SIZE = 20;
     const FREE_TOKENS_PER_MONTH = 4;
+    const MAX_OPENAI_WAIT_TIME = 40;
 }

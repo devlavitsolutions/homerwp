@@ -6,7 +6,7 @@ use App\Services\OpenAIService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithoutMiddleware;
 
-class OpenAIControllerTest extends TestCase
+class ContentControllerTest extends TestCase
 {
     use WithoutMiddleware; 
 

@@ -4,9 +4,12 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use App\Constants\Routes;
 use App\Constants\Messages;
+use App\Constants\Defaults;
 use Symfony\Component\HttpFoundation\Response;
+use Parsedown;
+use App\Http\Contracts\IContentInterface;
 
-class OpenAIService
+class OpenAIService implements IContentInterface
 {
     private $client;
     private $apiKey;
@@ -40,11 +43,11 @@ class OpenAIService
         return isset($response['status_code']) && $response['status_code'] == Response::HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    private function handleError($statusCode)
+    private function handleError($statusCode = Response::HTTP_INTERNAL_SERVER_ERROR)
     {
         return [
             'message' => Messages::OPENAI_ERROR_MESSAGE,
-            'status_code' => Response::HTTP_INTERNAL_SERVER_ERROR
+            'status_code' => $statusCode
         ];
     }
 
@@ -136,6 +139,62 @@ class OpenAIService
         }
     }
 
+    private function convertMarkdownToHtml($markdown)
+    {
+        $parsedown = new \Parsedown();
+        $html = $parsedown->text($markdown);
+        $html = str_replace("\n", "", $html);
+        return $html;
+    }
+
+    private function extractAndConvertContent($markdownContent, $message)
+    {
+        preg_match('/Title:(.+)/', $markdownContent, $titleMatches);
+        preg_match('/Meta Description:(.+)/', $markdownContent, $metaDescriptionMatches);
+        preg_match('/Slug:(.+)/', $markdownContent, $slugMatches);
+        preg_match('/Article:(.+)/s', $markdownContent, $articleMatches);
+
+        $title = preg_replace('/^\*\*\s?/', '', $titleMatches[1] ?? '');
+        $metaDescription = preg_replace('/^\*\*\s?/', '', $metaDescriptionMatches[1] ?? '');
+        $slug = preg_replace('/^\*\*\s?/', '', $slugMatches[1] ?? '');
+        $article = preg_replace('/^\*\*\s?/', '', $articleMatches[1] ?? '');
+
+        $articleHtmlContent = $this->convertMarkdownToHtml($article);
+
+        $keywords = explode(' ', $message);
+        $firstKeyword = $keywords[0] ?? '';
+        $secondKeyword = $keywords[1] ?? '';
+
+        if ($firstKeyword) {
+            $articleHtmlContent = preg_replace_callback(
+                '/\b' . preg_quote($firstKeyword, '/') . '\b/i',
+                function ($matches) use ($firstKeyword) {
+                    return '<a href="https://en.wikipedia.org/w/index.php?search=' . urlencode($firstKeyword) . '">' . $matches[0] . '</a>';
+                },
+                $articleHtmlContent,
+                1
+            );
+        }
+    
+        if ($secondKeyword) {
+            $articleHtmlContent = preg_replace_callback(
+                '/\b' . preg_quote($secondKeyword, '/') . '\b/i',
+                function ($matches) use ($secondKeyword) {
+                    return '<a href="/">' . $matches[0] . '</a>';
+                },
+                $articleHtmlContent,
+                1
+            );
+        }
+
+        return [
+            'title' => $title,
+            'metaDescription' => $metaDescription,
+            'slug' => $slug,
+            'article' => $articleHtmlContent,
+        ];
+    }
+
     public function getAssistantResponse($message)
     {
         $thread = $this->createThread();
@@ -150,8 +209,16 @@ class OpenAIService
         if ($this->isError($run)) {
             return $this->handleError();
         }
+
+        $startTime = time();
+
         while ($run['status'] === 'queued' || $run['status'] === 'in_progress') {
+            if ((time() - $startTime) > Defaults::MAX_OPENAI_WAIT_TIME) {
+                return $this->handleError();
+            }
+
             sleep(2);
+
             $run = $this->getRun($thread['id'], $run['id']);
             if ($this->isError($run)) {
                 return $this->handleError();
@@ -162,7 +229,9 @@ class OpenAIService
             if ($this->isError($response)) {
                 return $this->handleError();
             }
-            return ['data' => $response['data'][0]['content'][0]['text']['value']];
+
+            $markdownContent = $response['data'][0]['content'][0]['text']['value'];
+            return $this->extractAndConvertContent($markdownContent, $message);
         }
         return $this->handleError();
     }

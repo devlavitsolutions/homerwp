@@ -3,17 +3,17 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Services\OpenAIService;
+use App\Http\Contracts\IContentInterface;
 use App\Models\Log;
 use App\Constants\Persist;
 
-class OpenAIController extends Controller
+class ContentController extends Controller
 {
-    protected $openAIService;
+    protected $contentService;
 
-    public function __construct(OpenAIService $openAIService)
+    public function __construct(IContentInterface $contentService)
     {
-        $this->openAIService = $openAIService;
+        $this->contentService = $contentService;
     }
 
     public function getAssistantResponse(Request $request)
@@ -29,13 +29,13 @@ class OpenAIController extends Controller
         $website = $validatedData[Persist::WEBSITE];
         $licenceKey = $validatedData[Persist::LICENSE_KEY];
 
-        $response = $this->openAIService->getAssistantResponse($keywords);
+        $response = $this->contentService->getAssistantResponse($keywords);
 
         Log::create([
             Persist::KEYWORDS => $keywords,
             Persist::WEBSITE => $website,
             Persist::LICENSE_KEY => $licenceKey,
-            Persist::RESPONSE => isset($response['data']) ? json_encode($response['data']) : null, 
+            Persist::RESPONSE => json_encode($response)
         ]);
 
         return response()->json($response);

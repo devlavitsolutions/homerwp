@@ -4,7 +4,7 @@ use App\Constants\Roles;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\OpenAIController;
+use App\Http\Controllers\ContentController;
 use App\Constants\Routes;
 
 /*
@@ -26,7 +26,7 @@ use App\Constants\Routes;
 
 Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
 
-Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
+Route::post('/' . Routes::CONTENT, [ContentController::class, 'getAssistantResponse']);
 
 // Admin-protected routes
 
