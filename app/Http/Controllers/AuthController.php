@@ -2,85 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Constants\Defaults;
-use App\Constants\Persist;
-use App\Constants\Roles;
+use App\Constants\{Roles};
+use App\Database\Constants\TokenCol;
+use App\Database\Interfaces\IUserDbService;
+use App\Http\DTOs\TokenDTO;
+use App\Http\DTOs\UserDTO;
+use App\Http\DTOs\UserIdDTO;
 use Illuminate\Http\Request;
-
-use App\Models\User;
-use App\Constants\Routes;
-use App\Constants\Labels;
-use App\Constants\Messages;
 use App\Helpers\Generators;
-use App\Models\Token;
-use DateTime;
+use App\Database\Constants\UserCol;
+use App\Database\Interfaces\ITokenDbService;
+use App\Http\Interfaces\IAuthService;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
-    private function getValidUserIdFromRouteParams(Request $request)
-    {
-        $userId = $request->route(Routes::USER_ID);
-
-        $request->merge([Routes::USER_ID => $userId]);
-        $request->validate([Routes::USER_ID => Persist::VALIDATE_ID]);
-
-        return $userId;
-    }
-
-    private function getValidUserLicenseKeyFromRouteParams(Request $request)
-    {
-        $licenseKey = $request->route(Routes::LICENSE_KEY);
-
-        $request->merge([Persist::LICENSE_KEY => $licenseKey]);
-        $request->validate([Persist::LICENSE_KEY => Persist::VALIDATE_EXISTING_LICENSE_KEY]);
-
-        return $licenseKey;
-    }
-
-    private function checkIfDateBelongsToCurrentMonth(?string $dateTimeLastUsed)
-    {
-        if ($dateTimeLastUsed === null) {
-            return false;
-        }
-
-        $currentDate = new DateTime();
-        $startOfMonth = $currentDate->setTime(0, 0, 0);
-        $lastDateTime = new DateTime($dateTimeLastUsed);
-
-        return $lastDateTime >= $startOfMonth;
-    }
-
-    private function calculateRemainingFreeTokens(
-        ?int $freeTokensUsedThisMonth,
-        ?string $dateTimelastUsed
+    public function __construct(
+        private IUserDbService $userDbService,
+        private ITokenDbService $tokenDbService,
+        private IAuthService $authService,
     ) {
-        $usedTokens = $freeTokensUsedThisMonth ?? 0;
-
-        if ($this->checkIfDateBelongsToCurrentMonth($dateTimelastUsed)) {
-            return max(Defaults::FREE_TOKENS_PER_MONTH - $usedTokens, 0);
-        } else {
-            return Defaults::FREE_TOKENS_PER_MONTH;
-        }
-    }
-
-    private function validateTokensEndpoint(Request $request)
-    {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
-
-        $fields = $request->validate(([
-            Persist::PAID_TOKENS => Persist::VALIDATE_PAID_TOKENS,
-        ]));
-
-        $paidTokens = (int)$fields[Persist::PAID_TOKENS];
-
-        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
-
-        return [
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::PAID_TOKENS => $paidTokens,
-            Persist::USER_ID => $relatedUser[Persist::ID],
-        ];
     }
 
     /**
@@ -103,23 +44,11 @@ class AuthController extends Controller
      */
     public function register(Request $request)
     {
-        $fields = $request->validate(([
-            Persist::EMAIL => Persist::VALIDATE_EMAIL,
-            Persist::PASSWORD => Persist::VALIDATE_PASSWORD,
-        ]));
+        $credentials = $this->authService->validateRegisterEndpoint($request);
 
-        $user = User::create([
-            Persist::EMAIL => $fields[Persist::EMAIL],
-            Persist::PASSWORD => Generators::encryptPassword($fields[Persist::PASSWORD]),
-            Persist::LICENSE_KEY => Generators::generateLicenseKey(),
-            Persist::IS_ADMIN => false
-        ]);
+        $user = $this->userDbService->create($credentials->email, $credentials->password);
 
-        $response = [
-            Labels::USER => $user
-        ];
-
-        return response($response, Response::HTTP_CREATED);
+        return response(new UserDTO($user), Response::HTTP_CREATED);
     }
 
     /**
@@ -139,31 +68,14 @@ class AuthController extends Controller
      */
     public function login(Request $request)
     {
-        $fields = $request->validate([
-            Persist::EMAIL => Persist::VALIDATE_REQUIRED,
-            Persist::PASSWORD => Persist::VALIDATE_REQUIRED,
-        ]);
+        $user = $this->authService->validateLoginEndpoint($request);
 
-        $user = User::where(Persist::EMAIL, $fields[Persist::EMAIL])->firstOrFail();
+        $token = $user->createToken(
+            $user[UserCol::EMAIL],
+            $user[UserCol::IS_ADMIN] ? [Roles::Admin] : []
+        )->plainTextToken;
 
-        if (
-            !$user
-            || !Generators::checkPassword($fields[Persist::PASSWORD], $user[Persist::PASSWORD])
-        ) {
-            abort(
-                Response::HTTP_UNAUTHORIZED,
-                Messages::BAD_CREDENTIALS,
-            );
-        }
-
-        $abilities = $user[Persist::IS_ADMIN] ? [Roles::Admin->value] : [];
-
-        $token = $user->createToken($user[Persist::EMAIL], $abilities)->plainTextToken;
-
-        return [
-            Labels::USER => $user,
-            Labels::TOKEN => $token
-        ];
+        return new UserDTO($user, $token);
     }
 
     /**
@@ -193,16 +105,9 @@ class AuthController extends Controller
      */
     public function getAllUsers(Request $request)
     {
-        $pageName = 'page';
+        $pageIndex = $this->authService->validateGetAllUsersEndpoint($request);
 
-        $page = $request->page ?: Defaults::PAGE;
-        if ($page <= 0) {
-            $page = Defaults::PAGE;
-        }
-
-        $users = User::paginate(Defaults::PAGE_SIZE, ['*'], $pageName, $page);
-
-        return $users;
+        return $this->userDbService->selectAllUsers($pageIndex);
     }
 
     /**
@@ -221,45 +126,11 @@ class AuthController extends Controller
      */
     public function getUser(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+        $licenseKey = $this->authService->validateLicenseKeyRouteParam($request);
 
-        $user = User
-            ::where(
-                Persist::USERS . '.' . Persist::LICENSE_KEY,
-                '=',
-                $licenseKey
-            )
-            ->leftJoin(
-                Persist::TOKENS,
-                Persist::USERS . '.' . Persist::ID,
-                '=',
-                Persist::TOKENS . '.' . Persist::USER_ID,
-            )
-            ->select(
-                Persist::USERS . '.*',
-                Persist::TOKENS . '.' . Persist::FREE_TOKENS,
-                Persist::TOKENS . '.' . Persist::PAID_TOKENS,
-                Persist::TOKENS . '.' . Persist::LAST_USED,
-            )
-            ->with([Persist::ACTIVATIONS => function ($query) {
-                $query->select(Persist::WEBSITE, Persist::USER_ID);
-            }])
-            ->firstOrFail();
+        $user = $this->userDbService->selectUserDetailsByLicenseKey($licenseKey);
 
-        $user[Persist::WEBSITES] = array_map(function ($entry) {
-            return $entry[Persist::WEBSITE];
-        }, $user->activations->toArray());
-        unset($user[Persist::ACTIVATIONS]);
-
-        $user[Labels::FREE_TOKENS] = $this->calculateRemainingFreeTokens(
-            $user[Persist::FREE_TOKENS],
-            $user[Persist::LAST_USED]
-        );
-        unset($user[Persist::FREE_TOKENS]);
-
-        return [
-            Labels::USER => $user
-        ];
+        return new UserDTO($user);
     }
 
     /**
@@ -279,22 +150,16 @@ class AuthController extends Controller
      */
     public function setEmail(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+        $emailData = $this->authService->validateSetEmailEndpoint($request);
 
-        $fields = $request->validate(([
-            Persist::EMAIL => Persist::VALIDATE_EMAIL,
-        ]));
+        $this->userDbService->updateField(
+            UserCol::EMAIL,
+            $emailData->email,
+            UserCol::LICENSE_KEY,
+            $emailData->licenseKey
+        );
 
-        $email = $fields[Persist::EMAIL];
-
-        User::where(Persist::LICENSE_KEY, '=', $licenseKey)
-            ->limit(1)
-            ->update([Persist::EMAIL => $email]);
-
-        return [
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::EMAIL => $email,
-        ];
+        return $emailData;
     }
 
     /**
@@ -314,28 +179,21 @@ class AuthController extends Controller
      */
     public function setTokensCount(Request $request)
     {
-        $variables = $this->validateTokensEndpoint($request);
-        $licenseKey = $variables[Persist::LICENSE_KEY];
-        $paidTokens = $variables[Persist::PAID_TOKENS];
-        $userId = $variables[Persist::USER_ID];
+        $tokenData = $this->authService->validateTokensEndpoint($request);
 
-        Token::updateOrCreate(
-            [Persist::USER_ID => $userId],
-            [
-                Persist::LICENSE_KEY => $licenseKey,
-                Persist::PAID_TOKENS => $paidTokens,
-                Persist::IS_PREMIUM => true
-            ],
+        $this->tokenDbService->setPaidTokens(
+            $tokenData->userId,
+            $tokenData->paidTokens,
         );
 
-        User::where(Persist::ID, '=', $userId)
-            ->take(1)
-            ->update([Persist::IS_PREMIUM => true]);
+        $this->userDbService->updateField(
+            UserCol::IS_PREMIUM,
+            true,
+            UserCol::ID,
+            $tokenData->userId
+        );
 
-        return [
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::PAID_TOKENS => $paidTokens,
-        ];
+        return $tokenData;
     }
 
     /**
@@ -355,29 +213,25 @@ class AuthController extends Controller
      */
     public function addTokensCount(Request $request)
     {
-        $variables = $this->validateTokensEndpoint($request);
-        $licenseKey = $variables[Persist::LICENSE_KEY];
-        $paidTokens = $variables[Persist::PAID_TOKENS];
-        $userId = $variables[Persist::USER_ID];
+        $tokenData = $this->authService->validateTokensEndpoint($request);
 
-        $token = Token::firstOrNew(
-            [Persist::USER_ID => $userId],
-            [
-                Persist::FREE_TOKENS => 0,
-                Persist::PAID_TOKENS => 0,
-            ]
+        $tokenModel = $this->tokenDbService->addPaidTokens(
+            $tokenData->userId,
+            $tokenData->paidTokens
         );
-        $token->save();
-        $token->increment(Persist::PAID_TOKENS, $paidTokens);
 
-        $newTokensCount = $token->fresh()[Persist::PAID_TOKENS];
+        $this->userDbService->updateField(
+            UserCol::IS_PREMIUM,
+            true,
+            UserCol::ID,
+            $tokenData->userId
+        );
 
-        User::find($userId)->update([Persist::IS_PREMIUM => true]);
-
-        return [
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::PAID_TOKENS => $newTokensCount,
-        ];
+        return new TokenDTO(
+            $tokenModel[TokenCol::PAID_TOKENS],
+            $tokenData->licenseKey,
+            $tokenData->userId
+        );
     }
 
     /**
@@ -396,23 +250,14 @@ class AuthController extends Controller
      */
     public function deleteTokensCount(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+        $licenseKey = $this->authService->validateLicenseKeyRouteParam($request);
 
-        $relatedUser = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+        $relatedUser = $this->userDbService->selectUserByLicenseKey($licenseKey);
+        $userId = $relatedUser[UserCol::ID];
 
-        Token::updateOrCreate(
-            [Persist::USER_ID => $relatedUser[Persist::ID]],
-            [
-                Persist::PAID_TOKENS => 0,
-                Persist::LICENSE_KEY => $licenseKey,
-            ],
+        $this->tokenDbService->setPaidTokens($userId, 0);
 
-        );
-
-        return [
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::PAID_TOKENS => 0,
-        ];
+        return new TokenDTO(0, $licenseKey, $userId);
     }
 
     /**
@@ -431,14 +276,11 @@ class AuthController extends Controller
      */
     public function getLicenseKey(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $userId = $this->authService->validateUserIdRouteParam($request);
 
-        $licenseKey = User::findOrFail($userId);
+        $user = $this->userDbService->selectUserById($userId);
 
-        return [
-            Persist::ID => $userId,
-            Persist::LICENSE_KEY => $licenseKey[Persist::LICENSE_KEY]
-        ];
+        return new UserIdDTO($userId, $user[UserCol::LICENSE_KEY]);
     }
 
     /**
@@ -458,17 +300,18 @@ class AuthController extends Controller
      */
     public function resetLicenseKey(Request $request)
     {
-        $userId = $this->getValidUserIdFromRouteParams($request);
+        $userId = $this->authService->validateUserIdRouteParam($request);
 
         $newLicenseKey = Generators::generateLicenseKey();
 
-        User::findOrFail($userId)
-            ->update([Persist::LICENSE_KEY => $newLicenseKey]);
+        $this->userDbService->updateField(
+            UserCol::LICENSE_KEY,
+            $newLicenseKey,
+            UserCol::ID,
+            $userId
+        );
 
-        return [
-            Persist::ID => $userId,
-            Persist::LICENSE_KEY => $newLicenseKey
-        ];
+        return new UserIdDTO($userId, $newLicenseKey);
     }
 
     /**
@@ -488,25 +331,16 @@ class AuthController extends Controller
      */
     public function setIsDisabled(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+        $isDisabledData = $this->authService->validateSetIsDisabledEndpoint($request);
 
-        $newIsDisabledState = $request->input(Persist::IS_DISABLED);
+        $this->userDbService->updateField(
+            UserCol::IS_DISABLED,
+            $isDisabledData->isDisabled,
+            UserCol::LICENSE_KEY,
+            $isDisabledData->licenseKey
+        );
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
-
-        if ($newIsDisabledState && $user[Persist::IS_ADMIN]) {
-            abort(
-                Response::HTTP_UNPROCESSABLE_ENTITY,
-                Messages::BAD_REQUEST_DISABLE_ADMIN,
-            );
-        }
-
-        $user->update([Persist::IS_DISABLED => $newIsDisabledState]);
-
-        return [
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::IS_DISABLED => $newIsDisabledState
-        ];
+        return $isDisabledData;
     }
 
     /**
@@ -527,30 +361,16 @@ class AuthController extends Controller
      */
     public function setIsAdmin(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+        $isAdminData = $this->authService->validateSetIsAdminEndpoint($request);
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+        $this->userDbService->updateField(
+            UserCol::IS_ADMIN,
+            $isAdminData->isAdmin,
+            UserCol::LICENSE_KEY,
+            $isAdminData->licenseKey
+        );
 
-        $newIsAdminState = $request->input(Persist::IS_ADMIN);
-
-        if ($user[Persist::IS_ADMIN] && !$newIsAdminState) {
-            $adminCount = User::where(Persist::IS_ADMIN, '=', true)
-                ->count();
-
-            if ($adminCount <= 1) {
-                abort(
-                    Response::HTTP_UNPROCESSABLE_ENTITY,
-                    Messages::BAD_REQUEST_LAST_ADMIN,
-                );
-            }
-        }
-
-        $user->update([Persist::IS_ADMIN => $newIsAdminState]);
-
-        return [
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::IS_ADMIN => $newIsAdminState
-        ];
+        return $isAdminData;
     }
 
     /**
@@ -567,17 +387,14 @@ class AuthController extends Controller
      */
     public function setPassword(Request $request)
     {
-        $licenseKey = $this->getValidUserLicenseKeyFromRouteParams($request);
+        $passwordData = $this->authService->validateSetPasswordEndpoint($request);
 
-        $fields = $request->validate([
-            Persist::PASSWORD => Persist::VALIDATE_PASSWORD,
-        ]);
-
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->take(1);
-
-        $user->update([
-            Persist::PASSWORD => Generators::encryptPassword($fields[Persist::PASSWORD])
-        ]);
+        $this->userDbService->updateField(
+            UserCol::PASSWORD,
+            $passwordData->password,
+            UserCol::LICENSE_KEY,
+            $passwordData->licenseKey,
+        );
 
         return response()->noContent();
     }

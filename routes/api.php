@@ -24,7 +24,7 @@ use App\Constants\Routes;
 
 Route::group([Labels::MIDDLEWARE_INDICATOR => [
     Labels::AUTH_MIDDLEWARE,
-    Labels::AUTH_ROLES . ':' . Roles::Admin->value
+    Labels::AUTH_ROLES . ':' . Roles::Admin
 ]], function () {
     Route::post(
         '/' . Routes::REGISTER,

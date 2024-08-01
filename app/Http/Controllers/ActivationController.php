@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Constants\Defaults;
 use App\Constants\Messages;
 use App\Constants\Persist;
-use App\Models\Activation;
-use App\Models\User;
+use App\Database\Interfaces\IActivationDbService;
+use App\Database\Interfaces\IUserDbService;
+use App\Database\Models\Activation;
+use App\Database\Models\User;
 use Symfony\Component\HttpFoundation\Response;
 use DateInterval;
 use Illuminate\Http\Request;
@@ -14,21 +16,6 @@ use Nette\Utils\DateTime;
 
 class ActivationController extends Controller
 {
-    private function getUserByLicenseKey(string $licenseKey): User
-    {
-        return User
-            ::where(Persist::LICENSE_KEY, '=', $licenseKey)
-            ->firstOrFail();
-    }
-
-    private function getLatestActivationByLicenseKey(string $licenseKey): ?Activation
-    {
-        return Activation
-            ::where(Persist::LICENSE_KEY, '=', $licenseKey)
-            ->orderBy(Persist::UPDATED_AT, Persist::DESC)
-            ->first();
-    }
-
     private function validateUserIsPremiumOrHaventActivatedRecently(
         User $user,
         ?Activation $latestActivation,
@@ -59,16 +46,24 @@ class ActivationController extends Controller
         }
     }
 
+    public function __construct(
+        private IUserDbService $userDbService,
+        private IActivationDbService $activationDbService,
+    ) {
+    }
+
     public function postActivation(Request $request)
     {
         $fields = $request->validate(([
             Persist::LICENSE_KEY => Persist::VALIDATE_EXISTING_LICENSE_KEY,
             Persist::WEBSITE => Persist::VALIDATE_WEBSITE
         ]));
-
         $licenseKey = $fields[Persist::LICENSE_KEY];
-        $user = $this->getUserByLicenseKey($licenseKey);
-        $latestActivation = $this->getLatestActivationByLicenseKey($licenseKey);
+
+        $user = $this->userDbService->selectUserByLicenseKey($licenseKey);
+        $latestActivation = $this->activationDbService->selectLatestActivationByLicenseKey(
+            $licenseKey
+        );
 
         $this->validateUserIsPremiumOrHaventActivatedRecently($user, $latestActivation);
 
@@ -94,7 +89,7 @@ class ActivationController extends Controller
         $licenseKey = $fields[Persist::LICENSE_KEY];
         $website = $fields[Persist::WEBSITE];
 
-        $user = $this->getUserByLicenseKey($licenseKey);
+        $user = $this->userDbService->selectUserByLicenseKey($licenseKey);
 
         if (!$user[Persist::IS_PREMIUM]) {
             abort(

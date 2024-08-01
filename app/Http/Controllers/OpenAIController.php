@@ -7,11 +7,11 @@ use App\Constants\Messages;
 use DateTime;
 use Illuminate\Http\Request;
 use App\Services\OpenAIService;
-use App\Models\Log;
+use App\Database\Models\Log;
 use App\Constants\Persist;
-use App\Models\Activation;
-use App\Models\Token;
-use App\Models\User;
+use App\Database\Models\Activation;
+use App\Database\Models\Token;
+use App\Database\Models\User;
 use Symfony\Component\HttpFoundation\Response;
 
 class OpenAIController extends Controller

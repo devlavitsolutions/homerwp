@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Models;
+namespace App\Database\Models;
 
-use App\Constants\Persist;
+use App\Database\Constants\Casts;
+use App\Database\Constants\TokenCol;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Activation extends Model
+class Token extends Model
 {
     use HasFactory;
 
@@ -16,9 +17,11 @@ class Activation extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        Persist::USER_ID,
-        Persist::LICENSE_KEY,
-        Persist::WEBSITE,
+        TokenCol::ID,
+        TokenCol::USER_ID,
+        TokenCol::FREE_TOKENS,
+        TokenCol::PAID_TOKENS,
+        TokenCol::LAST_USED,
     ];
 
     /**
@@ -33,5 +36,9 @@ class Activation extends Model
      *
      * @var array<string, string>
      */
-    protected $casts = [];
+    protected $casts = [
+        TokenCol::LAST_USED => Cast::DATETIME,
+    ];
+
+    public $timestamps = false;
 }
