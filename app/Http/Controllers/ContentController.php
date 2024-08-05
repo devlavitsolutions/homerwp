@@ -54,7 +54,7 @@ class ContentController extends Controller
             Persist::KEYWORDS => $keywords,
             Persist::WEBSITE => $website,
             Persist::LICENSE_KEY => $licenseKey,
-            Persist::RESPONSE => isset($response[Persist::DATA]) ? json_encode($response[Persist::DATA]) : null,
+            Persist::RESPONSE => json_encode($response),
         ]);
 
         if ($token) {

@@ -33,6 +33,10 @@ class ActivationController extends Controller
         User $user,
         ?Activation $latestActivation,
     ) {
+        if (!$latestActivation) {
+            return;
+        }
+
         $currentDate = new DateTime();
         $requiredInterval = new DateInterval(Defaults::PERIOD_BETWEEN_ACTIVATIONS_FOR_FREE_USER);
         $oneMonthAgo = (clone $currentDate)->sub($requiredInterval);
