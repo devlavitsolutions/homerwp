@@ -6,7 +6,7 @@ use App\Constants\Defaults;
 use App\Constants\Messages;
 use DateTime;
 use Illuminate\Http\Request;
-use App\Services\OpenAIService;
+use App\Http\Contracts\IContentInterface;
 use App\Models\Log;
 use App\Constants\Persist;
 use App\Models\Activation;
@@ -14,13 +14,13 @@ use App\Models\Token;
 use App\Models\User;
 use Symfony\Component\HttpFoundation\Response;
 
-class OpenAIController extends Controller
+class ContentController extends Controller
 {
-    protected $openAIService;
+    protected $contentService;
 
-    public function __construct(OpenAIService $openAIService)
+    public function __construct(IContentInterface $contentService)
     {
-        $this->openAIService = $openAIService;
+        $this->contentService = $contentService;
     }
 
     public function getAssistantResponse(Request $request)
@@ -48,7 +48,7 @@ class OpenAIController extends Controller
             && $token[Persist::FREE_TOKENS] >= Defaults::FREE_TOKENS_PER_MONTH
             && abort(Response::HTTP_PAYMENT_REQUIRED, Messages::PAYMENT_REQUIRED);
 
-        $response = $this->openAIService->getAssistantResponse($keywords);
+        $response = $this->contentService->getAssistantResponse($keywords);
 
         Log::create([
             Persist::KEYWORDS => $keywords,

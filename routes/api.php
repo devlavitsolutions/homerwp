@@ -5,7 +5,7 @@ use App\Constants\Roles;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\OpenAIController;
+use App\Http\Controllers\ContentController;
 use App\Http\Controllers\ActivationController;
 use App\Constants\Routes;
 
@@ -96,7 +96,7 @@ Route::group([Labels::MIDDLEWARE_INDICATOR => [Labels::AUTH_MIDDLEWARE]], functi
 
 Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
 
-Route::post('/' . Routes::CONTENT, [OpenAIController::class, 'getAssistantResponse']);
+Route::post('/' . Routes::CONTENT, [ContentController::class, 'getAssistantResponse']);
 
 Route::post('/' . Routes::ACTIVATIONS_DELETE, [ActivationController::class, 'deleteActivation']);
 
