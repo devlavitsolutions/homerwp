@@ -2,9 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 use Tests\Consts\TestApiEndpoints;
 use Tests\Consts\TestData;
 use Tests\Consts\TestJsonKeys;
@@ -17,6 +15,7 @@ class AuthControllerTest extends TestCase
     use RefreshDatabase;
 
     private const BAD_ID = -1;
+    private const BAD_KEY = 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
 
     private function login(
         string $email = TestData::SEED_EMAIL,
@@ -37,7 +36,8 @@ class AuthControllerTest extends TestCase
     private function loginAndCreateASingleUser(
         $email = TestData::USER1_EMAIL,
         $password = TestData::USER1_PASSWORD,
-    ): int {
+        $column = TestJsonKeys::LICENSE_KEY,
+    ): int|string {
         $newUserResponse = $this
             ->login()
             ->postJson(TestApiEndpoints::REGISTER, [
@@ -46,12 +46,12 @@ class AuthControllerTest extends TestCase
             ])
             ->decodeResponseJson();
 
-        $newUserId = $newUserResponse[TestJsonKeys::USER][TestJsonKeys::ID];
+        $newUserIdentificator = $newUserResponse[TestJsonKeys::USER][$column];
 
-        return $newUserId;
+        return $newUserIdentificator;
     }
 
-    private function getAdminUserId(): int
+    private function getAdminLicenseKey(): string
     {
         $userList = $this
             ->login()
@@ -65,7 +65,7 @@ class AuthControllerTest extends TestCase
             }
         );
 
-        return reset($adminUsers)[TestJsonKeys::ID];
+        return reset($adminUsers)[TestJsonKeys::LICENSE_KEY_CAMEL];
     }
 
     private function assertUnsupportedMethodResponse(
@@ -109,8 +109,8 @@ class AuthControllerTest extends TestCase
         $this->assertIsArray($responseData[TestJsonKeys::USER]);
         $user = $responseData[TestJsonKeys::USER];
         $this->assertEquals($user[TestJsonKeys::EMAIL], TestData::SEED_EMAIL);
-        $this->assertEquals($user[TestJsonKeys::IS_ADMIN], true);
-        $this->assertEquals($user[TestJsonKeys::IS_DISABLED], false);
+        $this->assertEquals($user[TestJsonKeys::IS_ADMIN_CAMEL], true);
+        $this->assertEquals($user[TestJsonKeys::IS_DISABLED_CAMEL], false);
     }
     /** @test */
     public function loginWithWrongPasswordShouldFailWithMessage()
@@ -401,22 +401,22 @@ class AuthControllerTest extends TestCase
 
     /**
      * @test
-     * @depends registerNewUserShouldReturnDetails
+
      * */
     public function getUserShouldReturnDetails()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $responseData = $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertStatus(TestStatusCodes::OK)
             ->decodeResponseJson();
 
         $user = $responseData[TestJsonKeys::USER];
         $this->assertIsArray($user);
-        $this->assertEquals($user[TestJsonKeys::ID], $newUserId);
-        $this->assertEquals($user[TestJsonKeys::EMAIL], TestData::USER1_EMAIL);
         $this->assertIsString($user[TestJsonKeys::LICENSE_KEY_CAMEL]);
+        $this->assertEquals($user[TestJsonKeys::LICENSE_KEY_CAMEL], $newLicenseKey);
+        $this->assertEquals($user[TestJsonKeys::EMAIL], TestData::USER1_EMAIL);
         $this->assertEquals($user[TestJsonKeys::PAID_TOKENS], 0);
         $this->assertEquals($user[TestJsonKeys::FREE_TOKENS_REMAINING], TestData::FREE_MONTHLY_TOKENS);
     }
@@ -425,13 +425,13 @@ class AuthControllerTest extends TestCase
     {
         $this
             ->login()
-            ->getJson(TestApiEndpoints::USER_BY_ID(self::BAD_ID))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR(self::BAD_KEY))
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
             ->assertJsonFragment([
-                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_USER_ID
+                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_LICENSE_KEY
             ])
             ->assertJsonFragment([
-                TestJsonKeys::USER_ID => [TestResponseMessages::BAD_USER_ID]
+                TestJsonKeys::LICENSE_KEY_CAMEL => [TestResponseMessages::BAD_LICENSE_KEY]
             ]);
     }
     /** @test */
@@ -441,28 +441,16 @@ class AuthControllerTest extends TestCase
             return $this->postJson(...$item);
         }, $this, $this);
 
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this->assertUnsupportedMethodResponse(
-            TestApiEndpoints::USER_BY_ID($newUserId),
+            TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey),
             [],
             $callable,
             TestData::POST,
             TestData::GET,
             TestData::HEAD,
         );
-    }
-    /** @test */
-    public function getUserWithoutCredentialsShouldFailWithMessage()
-    {
-        $response = $this
-            ->getJson(TestApiEndpoints::USER_BY_ID(0));
-
-        $response
-            ->assertStatus(TestStatusCodes::UNAUTHORIZED)
-            ->assertJsonFragment([
-                TestJsonKeys::MESSAGE => TestResponseMessages::UNAUTHORIZED,
-            ]);
     }
     // /** @test */
     // public function getUserWithNonAdminCredentialsShouldFailWithMessage()
@@ -473,33 +461,33 @@ class AuthControllerTest extends TestCase
     /** @test */
     public function setEmailShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $putResponse = $this
             ->putJson(
-                TestApiEndpoints::USER_EMAIL($newUserId),
+                TestApiEndpoints::USER_EMAIL($newLicenseKey),
                 [TestJsonKeys::EMAIL => TestData::USER2_EMAIL]
             );
 
         $putResponse
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::EMAIL => TestData::USER2_EMAIL,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::EMAIL => TestData::USER2_EMAIL]);
     }
     /** @test */
     public function setEmailWithBadEmailShouldFailWithMessage()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $response = $this
             ->putJson(
-                TestApiEndpoints::USER_EMAIL($newUserId),
+                TestApiEndpoints::USER_EMAIL($newLicenseKey),
                 [TestJsonKeys::EMAIL => TestData::BAD_EMAIL]
             );
 
@@ -519,10 +507,10 @@ class AuthControllerTest extends TestCase
             return $this->getJson(...$item);
         }, $this, $this);
 
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this->assertUnsupportedMethodResponse(
-            TestApiEndpoints::USER_EMAIL($newUserId),
+            TestApiEndpoints::USER_EMAIL($newLicenseKey),
             [],
             $callable,
             TestData::GET,
@@ -533,7 +521,10 @@ class AuthControllerTest extends TestCase
     public function setEmailWithoutCredentialsShouldFailWithMessage()
     {
         $response = $this
-            ->getJson(TestApiEndpoints::USER_BY_ID(0));
+            ->putJson(
+                TestApiEndpoints::USER_EMAIL(self::BAD_KEY),
+                [TestJsonKeys::EMAIL => TestData::USER2_EMAIL]
+            );
 
         $response
             ->assertStatus(TestStatusCodes::UNAUTHORIZED)
@@ -550,23 +541,23 @@ class AuthControllerTest extends TestCase
     /** @test */
     public function setTokensCountShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $postResponse = $this
             ->postJson(
-                TestApiEndpoints::USER_TOKENS($newUserId),
+                TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT]
             );
 
         $postResponse
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT]);
     }
     /** @test */
@@ -575,26 +566,26 @@ class AuthControllerTest extends TestCase
         $this
             ->login()
             ->postJson(
-                TestApiEndpoints::USER_TOKENS(self::BAD_ID),
+                TestApiEndpoints::USER_TOKENS(self::BAD_KEY),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT],
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
             ->assertJsonFragment([
-                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_USER_ID
+                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_LICENSE_KEY
             ])
             ->assertJsonFragment([
-                TestJsonKeys::USER_ID => [TestResponseMessages::BAD_USER_ID]
+                TestJsonKeys::LICENSE_KEY_CAMEL => [TestResponseMessages::BAD_LICENSE_KEY]
             ]);
     }
     /** @test */
     public function setTokensCountWithNegativeNumberShouldFailWithMessage()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this
             ->login()
             ->postJson(
-                TestApiEndpoints::USER_TOKENS($newUserId),
+                TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::NEGATIVE_TOKEN_COUNT],
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
@@ -609,8 +600,8 @@ class AuthControllerTest extends TestCase
     public function setTokensCountWithoutCredentialsShouldFailWithMessage()
     {
         $response = $this
-            ->postJson(
-                TestApiEndpoints::USER_TOKENS(0),
+            ->putJson(
+                TestApiEndpoints::USER_TOKENS(self::BAD_KEY),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT]
             );
 
@@ -628,51 +619,51 @@ class AuthControllerTest extends TestCase
     /** @test */
     public function addPaidTokensMultipleTimesShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $putResponse0 = $this
-            ->putJson(
-                TestApiEndpoints::USER_TOKENS($newUserId),
+            ->postJson(
+                TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::ADD_TOKEN_COUNT]
             );
 
         $putResponse0
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::PAID_TOKENS => TestData::ADD_TOKEN_COUNT,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::PAID_TOKENS => TestData::ADD_TOKEN_COUNT]);
 
         $putResponse1 = $this
-            ->putJson(
-                TestApiEndpoints::USER_TOKENS($newUserId),
+            ->postJson(
+                TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::ADD_TOKEN_COUNT]
             );
 
         $putResponse1
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::PAID_TOKENS => 2 * TestData::ADD_TOKEN_COUNT,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::PAID_TOKENS => 2 * TestData::ADD_TOKEN_COUNT]);
     }
     /** @test */
     public function addTokensCountWithNegativeNumberShouldFailWithMessage()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this
             ->login()
             ->putJson(
-                TestApiEndpoints::USER_TOKENS($newUserId),
+                TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::NEGATIVE_TOKEN_COUNT],
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
@@ -709,33 +700,33 @@ class AuthControllerTest extends TestCase
      */
     public function deleteTokensCountShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this
             ->postJson(
-                TestApiEndpoints::USER_TOKENS($newUserId),
+                TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT]
             );
 
         $deleteResponse = $this
-            ->deleteJson(TestApiEndpoints::USER_TOKENS($newUserId));
+            ->deleteJson(TestApiEndpoints::USER_TOKENS($newLicenseKey));
 
         $deleteResponse
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::PAID_TOKENS => 0,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::PAID_TOKENS => 0]);
     }
     /** @test */
     public function deleteTokensCountWithoutCredentialsShouldFailWithMessage()
     {
         $response = $this
-            ->deleteJson(TestApiEndpoints::USER_TOKENS(0));
+            ->deleteJson(TestApiEndpoints::USER_TOKENS(self::BAD_KEY));
 
         $response
             ->assertStatus(TestStatusCodes::UNAUTHORIZED)
@@ -755,10 +746,10 @@ class AuthControllerTest extends TestCase
             return $this->getJson(...$item);
         }, $this, $this);
 
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this->assertUnsupportedMethodResponse(
-            TestApiEndpoints::USER_TOKENS($newUserId),
+            TestApiEndpoints::USER_TOKENS($newLicenseKey),
             [],
             $callable,
             TestData::GET,
@@ -771,7 +762,11 @@ class AuthControllerTest extends TestCase
     /** @test */
     public function getLicenseKeyShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newUserId = $this->loginAndCreateASingleUser(
+            TestData::USER1_EMAIL,
+            TestData::USER1_PASSWORD,
+            TestJsonKeys::ID,
+        );
 
         $response = $this
             ->getJson(TestApiEndpoints::USER_LICENSE_KEY($newUserId));
@@ -786,17 +781,19 @@ class AuthControllerTest extends TestCase
     /** @test */
     public function getLicenseKeyWithBadUserIdShouldFailWithMessage()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $this->login();
 
         $response = $this
-            ->getJson(TestApiEndpoints::USER_LICENSE_KEY($newUserId));
+            ->getJson(TestApiEndpoints::USER_LICENSE_KEY(self::BAD_ID));
 
         $response
-            ->assertStatus(TestStatusCodes::OK)
-            ->assertJson([TestJsonKeys::ID => $newUserId]);
-
-        $responseData = $response->decodeResponseJson();
-        $this->assertIsString($responseData[TestJsonKeys::LICENSE_KEY_CAMEL]);
+            ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
+            ->assertJsonFragment([
+                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_USER_ID,
+            ])
+            ->assertJsonFragment([
+                TestJsonKeys::USER_ID => [TestResponseMessages::BAD_USER_ID],
+            ]);
     }
     /** @test */
     public function getLicenseKeyWithoutCredentialsShouldFailWithMessage()
@@ -817,11 +814,15 @@ class AuthControllerTest extends TestCase
     // }
     /**
      * @test
-     * @depends getLicenseKeyShouldSucceed
+     
      */
     public function resetLicenseKeyShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newUserId = $this->loginAndCreateASingleUser(
+            TestData::USER1_EMAIL,
+            TestData::USER1_PASSWORD,
+            TestJsonKeys::ID,
+        );
 
         $originalLicenseKey = $this
             ->getJson(TestApiEndpoints::USER_LICENSE_KEY($newUserId))
@@ -840,8 +841,7 @@ class AuthControllerTest extends TestCase
 
         $this->assertNotEquals($originalLicenseKey, $updatedLicenseKey);
 
-        $this
-            ->getJson(TestApiEndpoints::USER_LICENSE_KEY($newUserId))
+        $this->getJson(TestApiEndpoints::USER_LICENSE_KEY($newUserId))
             ->assertJson([
                 TestJsonKeys::ID => $newUserId,
                 TestJsonKeys::LICENSE_KEY_CAMEL => $updatedLicenseKey,
@@ -871,7 +871,11 @@ class AuthControllerTest extends TestCase
             return $this->postJson(...$item);
         }, $this, $this);
 
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newUserId = $this->loginAndCreateASingleUser(
+            TestData::USER1_EMAIL,
+            TestData::USER1_PASSWORD,
+            TestJsonKeys::ID,
+        );
 
         $this->assertUnsupportedMethodResponse(
             TestApiEndpoints::USER_LICENSE_KEY($newUserId),
@@ -890,40 +894,40 @@ class AuthControllerTest extends TestCase
      */
     public function setIsDisabledShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $putTrueResponse = $this
             ->putJson(
-                TestApiEndpoints::USER_IS_DISABLED($newUserId),
+                TestApiEndpoints::USER_IS_DISABLED($newLicenseKey),
                 [TestJsonKeys::IS_DISABLED_CAMEL => true]
             );
 
         $putTrueResponse
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::IS_DISABLED_CAMEL => true,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::IS_DISABLED_CAMEL => true]);
 
         $putFalseResponse = $this
             ->putJson(
-                TestApiEndpoints::USER_IS_DISABLED($newUserId),
+                TestApiEndpoints::USER_IS_DISABLED($newLicenseKey),
                 [TestJsonKeys::IS_DISABLED_CAMEL => false]
             );
 
         $putFalseResponse
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::IS_DISABLED_CAMEL => false,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::IS_DISABLED_CAMEL => false]);
     }
     /**
@@ -932,7 +936,7 @@ class AuthControllerTest extends TestCase
      */
     public function setIsDisabledOnAdminShouldFailWithMessage()
     {
-        $adminUserId = $this->getAdminUserId();
+        $adminUserId = $this->getAdminLicenseKey();
 
         $this
             ->putJson(
@@ -955,10 +959,10 @@ class AuthControllerTest extends TestCase
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
             ->assertJsonFragment([
-                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_USER_ID
+                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_LICENSE_KEY
             ])
             ->assertJsonFragment([
-                TestJsonKeys::USER_ID => [TestResponseMessages::BAD_USER_ID]
+                TestJsonKeys::LICENSE_KEY_CAMEL => [TestResponseMessages::BAD_LICENSE_KEY]
             ]);
     }
     /** @test */
@@ -968,10 +972,10 @@ class AuthControllerTest extends TestCase
             return $this->getJson(...$item);
         }, $this, $this);
 
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this->assertUnsupportedMethodResponse(
-            TestApiEndpoints::USER_IS_DISABLED($newUserId),
+            TestApiEndpoints::USER_IS_DISABLED($newLicenseKey),
             [],
             $callable,
             TestData::GET,
@@ -1002,50 +1006,50 @@ class AuthControllerTest extends TestCase
     /** @test */
     public function setIsAdminShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $putTrueResponse = $this
             ->putJson(
-                TestApiEndpoints::USER_IS_ADMIN($newUserId),
+                TestApiEndpoints::USER_IS_ADMIN($newLicenseKey),
                 [TestJsonKeys::IS_ADMIN_CAMEL => true]
             );
 
         $putTrueResponse
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::IS_ADMIN_CAMEL => true,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::IS_ADMIN_CAMEL => true]);
 
         $putFalseResponse = $this
             ->putJson(
-                TestApiEndpoints::USER_IS_ADMIN($newUserId),
+                TestApiEndpoints::USER_IS_ADMIN($newLicenseKey),
                 [TestJsonKeys::IS_ADMIN_CAMEL => false]
             );
 
         $putFalseResponse
             ->assertStatus(TestStatusCodes::OK)
             ->assertJson([
-                TestJsonKeys::ID => $newUserId,
+                TestJsonKeys::LICENSE_KEY_CAMEL => $newLicenseKey,
                 TestJsonKeys::IS_ADMIN_CAMEL => false,
             ]);
 
         $this
-            ->getJson(TestApiEndpoints::USER_BY_ID($newUserId))
+            ->getJson(TestApiEndpoints::USER_BY_IDENTIFICATOR($newLicenseKey))
             ->assertJsonFragment([TestJsonKeys::IS_ADMIN_CAMEL => false]);
     }
     /** @test */
     public function setIsAdminOnLastAdminShouldFailWithMessage()
     {
-        $adminUserId = $this->getAdminUserId();
+        $adminLicenseKey = $this->getAdminLicenseKey();
 
         $this
             ->putJson(
-                TestApiEndpoints::USER_IS_ADMIN($adminUserId),
+                TestApiEndpoints::USER_IS_ADMIN($adminLicenseKey),
                 [TestJsonKeys::IS_ADMIN_CAMEL => false]
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
@@ -1064,10 +1068,10 @@ class AuthControllerTest extends TestCase
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
             ->assertJsonFragment([
-                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_USER_ID
+                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_LICENSE_KEY
             ])
             ->assertJsonFragment([
-                TestJsonKeys::USER_ID => [TestResponseMessages::BAD_USER_ID]
+                TestJsonKeys::LICENSE_KEY_CAMEL => [TestResponseMessages::BAD_LICENSE_KEY]
             ]);
     }
     /** @test */
@@ -1077,10 +1081,10 @@ class AuthControllerTest extends TestCase
             return $this->getJson(...$item);
         }, $this, $this);
 
-        $newUserId = $this->loginAndCreateASingleUser();
+        $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $this->assertUnsupportedMethodResponse(
-            TestApiEndpoints::USER_IS_ADMIN($newUserId),
+            TestApiEndpoints::USER_IS_ADMIN($newLicenseKey),
             [],
             $callable,
             TestData::GET,
@@ -1114,14 +1118,14 @@ class AuthControllerTest extends TestCase
      */
     public function setPasswordShouldSucceed()
     {
-        $newUserId = $this->loginAndCreateASingleUser(
+        $newLicenseKey = $this->loginAndCreateASingleUser(
             TestData::USER1_EMAIL,
             TestData::USER1_PASSWORD
         );
 
         $this
             ->putJson(
-                TestApiEndpoints::USER_PASSWORD($newUserId),
+                TestApiEndpoints::USER_PASSWORD($newLicenseKey),
                 [TestJsonKeys::PASSWORD => TestData::USER2_PASSWORD]
             )
             ->assertStatus(TestStatusCodes::NO_CONTENT);
@@ -1146,14 +1150,14 @@ class AuthControllerTest extends TestCase
     /** @test */
     public function setPasswordThatIsShortShouldFailWithMessage()
     {
-        $newUserId = $this->loginAndCreateASingleUser(
+        $newLicenseKey = $this->loginAndCreateASingleUser(
             TestData::USER1_EMAIL,
             TestData::USER1_PASSWORD
         );
 
         $this
             ->putJson(
-                TestApiEndpoints::USER_PASSWORD($newUserId),
+                TestApiEndpoints::USER_PASSWORD($newLicenseKey),
                 [TestJsonKeys::PASSWORD => TestData::SHORT_PASSWORD]
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
@@ -1170,15 +1174,15 @@ class AuthControllerTest extends TestCase
         $this
             ->login()
             ->putJson(
-                TestApiEndpoints::USER_PASSWORD(self::BAD_ID),
+                TestApiEndpoints::USER_PASSWORD(self::BAD_KEY),
                 [TestJsonKeys::PASSWORD => TestData::USER2_PASSWORD]
             )
             ->assertStatus(TestStatusCodes::UNPROCESSABLE_ENTITY)
             ->assertJsonFragment([
-                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_USER_ID,
+                TestJsonKeys::MESSAGE => TestResponseMessages::BAD_LICENSE_KEY,
             ])
             ->assertJsonFragment([
-                TestJsonKeys::USER_ID => [TestResponseMessages::BAD_USER_ID],
+                TestJsonKeys::LICENSE_KEY_CAMEL => [TestResponseMessages::BAD_LICENSE_KEY],
             ]);
     }
     /** @test */
@@ -1201,7 +1205,7 @@ class AuthControllerTest extends TestCase
     {
         $response = $this
             ->putJson(
-                TestApiEndpoints::USER_PASSWORD(0),
+                TestApiEndpoints::USER_PASSWORD(self::BAD_KEY),
                 [TestJsonKeys::PASSWORD => TestData::USER1_PASSWORD]
             );
 

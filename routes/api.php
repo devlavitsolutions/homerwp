@@ -1,10 +1,12 @@
 <?php
 
+use App\Constants\Labels;
 use App\Constants\Roles;
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ContentController;
+use App\Http\Controllers\ActivationController;
 use App\Constants\Routes;
 
 /*
@@ -18,56 +20,18 @@ use App\Constants\Routes;
 |
 */
 
-// const MIDDLEWARE_INDICATOR = 'middleware';
-// const AUTH_MIDDLEWARE = 'auth:sanctum';
-// const AUTH_ROLES = 'abilities';
-
-// Public routes
-
-Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
-
-Route::post('/' . Routes::CONTENT, [ContentController::class, 'getAssistantResponse']);
-
 // Admin-protected routes
 
-Route::group(['middleware' => [
-    'auth:sanctum',
-    'abilities' . ':' . Roles::Admin->value
+Route::group([Labels::MIDDLEWARE_INDICATOR => [
+    Labels::AUTH_MIDDLEWARE,
+    Labels::AUTH_ROLES . ':' . Roles::Admin->value
 ]], function () {
     Route::post(
         '/' . Routes::REGISTER,
         [AuthController::class, 'register']
     );
 
-    Route::get(
-        '/' . Routes::USERS,
-        [AuthController::class, 'getAllUsers']
-    );
-
     Route::prefix('/' . Routes::USERS . '/{' . Routes::USER_ID . '}')->group(function () {
-        Route::get(
-            '/',
-            [AuthController::class, 'getUser']
-        );
-
-        Route::put(
-            '/' . Routes::EMAIL,
-            [AuthController::class, 'setEmail']
-        );
-
-        Route::post(
-            '/' . Routes::TOKENS_COUNT,
-            [AuthController::class, 'setTokensCount']
-        );
-        Route::put(
-            '/' . Routes::TOKENS_COUNT,
-            [AuthController::class, 'addTokensCount']
-        );
-        Route::delete(
-            '/' . Routes::TOKENS_COUNT,
-            [AuthController::class, 'deleteTokensCount']
-        );
-
         Route::get(
             '/' . Routes::LICENSE_KEY,
             [AuthController::class, 'getLicenseKey']
@@ -75,6 +39,26 @@ Route::group(['middleware' => [
         Route::delete(
             '/' . Routes::LICENSE_KEY,
             [AuthController::class, 'resetLicenseKey']
+        );
+    });
+
+    Route::prefix('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}')->group(function () {
+        Route::put(
+            '/' . Routes::EMAIL,
+            [AuthController::class, 'setEmail']
+        );
+
+        Route::put(
+            '/' . Routes::TOKENS_COUNT,
+            [AuthController::class, 'setTokensCount']
+        );
+        Route::post(
+            '/' . Routes::TOKENS_COUNT,
+            [AuthController::class, 'addTokensCount']
+        );
+        Route::delete(
+            '/' . Routes::TOKENS_COUNT,
+            [AuthController::class, 'deleteTokensCount']
         );
 
         Route::put(
@@ -92,14 +76,30 @@ Route::group(['middleware' => [
             [AuthController::class, 'setPassword']
         );
     });
+
+    Route::get(
+        '/' . Routes::USERS,
+        [AuthController::class, 'getAllUsers']
+    );
 });
 
 // Auth-protected rotues
 
-Route::group(['middleware' => ['auth:sanctum']], function () {
+Route::group([Labels::MIDDLEWARE_INDICATOR => [Labels::AUTH_MIDDLEWARE]], function () {
     Route::post(
         '/' . Routes::LOGOUT,
         [AuthController::class, 'logout']
     );
 });
 
+// Public routes
+
+Route::post('/' . Routes::LOGIN, [AuthController::class, 'login']);
+
+Route::post('/' . Routes::CONTENT, [ContentController::class, 'getAssistantResponse']);
+
+Route::post('/' . Routes::ACTIVATIONS_DELETE, [ActivationController::class, 'deleteActivation']);
+
+Route::post('/' . Routes::ACTIVATIONS, [ActivationController::class, 'postActivation']);
+
+Route::get('/' . Routes::USERS . '/{' . Routes::LICENSE_KEY . '}', [AuthController::class, 'getUser']);

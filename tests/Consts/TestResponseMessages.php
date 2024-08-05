@@ -7,6 +7,7 @@ class TestResponseMessages
     const WRONG_CREDENTIALS = 'Username or password is wrong.';
     const BAD_EMAIL = 'The email field must be a valid email address.';
     const BAD_USER_ID = 'The selected user id is invalid.';
+    const BAD_LICENSE_KEY = 'The selected license key is invalid.';
     const ADMIN_USERS_MUST_BE_ENABLED = 'Cannot disable admin users. Please first change their roles.';
     const AT_LEAST_ONE_ADMIN_NEEDED = 'Cannot remove last admin. At least one must remain.';
     const EMAIL_ALREADY_TAKEN = 'The email has already been taken.';
