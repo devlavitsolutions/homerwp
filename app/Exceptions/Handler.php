@@ -43,19 +43,19 @@ class Handler extends ExceptionHandler
      * @param  \Throwable  $e
      * @return \Illuminate\Http\Response
      */
-    public function render($request, Throwable $e)
-    {
-        $response = [
-            Labels::MESSAGE => $e->getMessage(),
-        ];
+    // public function render($request, Throwable $e)
+    // {
+    //     $response = [
+    //         Labels::MESSAGE => $e->getMessage(),
+    //     ];
 
-        if ($e instanceof ValidationException) {
-            $response[Labels::ERRORS] = $e->errors();
-        }
+    //     if ($e instanceof ValidationException) {
+    //         $response[Labels::ERRORS] = $e->errors();
+    //     }
 
-        return response()->json(
-            $response,
-            $this->getExceptionStatusCode($e),
-        );
-    }
+    //     return response()->json(
+    //         $response,
+    //         $this->getExceptionStatusCode($e),
+    //     );
+    // }
 }
