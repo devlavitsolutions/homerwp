@@ -192,6 +192,7 @@ class OpenAIService implements IContentInterface
             'metaDescription' => $metaDescription,
             'slug' => $slug,
             'article' => $articleHtmlContent,
+            'focusKeywords' => strtolower($message)
         ];
     }
 
