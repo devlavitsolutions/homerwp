@@ -2,13 +2,16 @@
 
 namespace App\Http\Middleware;
 
-use App\Constants\Http;
+use App\Http\Constants\Http;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class RequestHeadersHandler
 {
+    protected const ACCEPT = 'Accept';
+    protected const APP_JSON = 'application/json';
+
     /**
      * Handle an incoming request.
      *
@@ -16,7 +19,7 @@ class RequestHeadersHandler
      */
     public function handle(Request $request, Closure $next): Response
     {
-        $request->headers->set(Http::ACCEPT, Http::APP_JSON);
+        $request->headers->set(self::ACCEPT, self::APP_JSON);
 
         return $next($request);
     }

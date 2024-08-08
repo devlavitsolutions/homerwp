@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Constants;
+namespace App\Http\Constants;
 
 class Messages
 {
@@ -11,4 +11,8 @@ class Messages
     const OPENAI_ERROR_MESSAGE = 'Sorry, we are unable to generate content at the moment. Please try again later.';
     const PREMIUM_CONTENT = 'This feature is exclusively available to our premium users. Please upgrade to access this and more!';
     const PAYMENT_REQUIRED = 'You have used free tokens for this month. Please upgrade for further access!';
+
+    private function __construct()
+    {
+    }
 }

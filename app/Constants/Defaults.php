@@ -9,4 +9,10 @@ class Defaults
     const FREE_TOKENS_PER_MONTH = 4;
     const PERIOD_BETWEEN_ACTIVATIONS_FOR_FREE_USER = 'P1M';
     const ENV_PRODUCTION = 'production';
+    const SEED_EMAIL = 'stefan.jankovic@lavitsolutions.com';
+    const SEED_PASSWORD = 'seedpas5word_CHANGE_IT';
+
+    private function __construct()
+    {
+    }
 }

@@ -25,4 +25,8 @@ class TestResponseMessages
             . implode(', ', $supportedMethods)
             . '.';
     }
+
+    private function __construct()
+    {
+    }
 }

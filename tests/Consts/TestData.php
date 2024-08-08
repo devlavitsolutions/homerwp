@@ -26,4 +26,8 @@ class TestData
     {
         return "indexed_user_{$index}@testing.com";
     }
+
+    private function __construct()
+    {
+    }
 }

@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Models;
+namespace App\Database\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-
-use App\Constants\Persist;
+use App\Database\Constants\Cast;
+use App\Database\Constants\UserCol;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -14,22 +13,19 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    private const VAR_BOOLEAN = 'boolean';
-    private const VAR_HASHED = 'hashed';
-
     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        Persist::ID,
-        Persist::EMAIL,
-        Persist::PASSWORD,
-        Persist::LICENSE_KEY,
-        Persist::IS_ADMIN,
-        Persist::IS_DISABLED,
-        Persist::CID
+        UserCol::ID,
+        UserCol::EMAIL,
+        UserCol::PASSWORD,
+        UserCol::LICENSE_KEY,
+        UserCol::IS_ADMIN,
+        UserCol::IS_DISABLED,
+        UserCol::CID
     ];
 
     /**
@@ -38,8 +34,8 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $hidden = [
-        Persist::PASSWORD,
-        Persist::REMEMBER_TOKEN,
+        UserCol::PASSWORD,
+        UserCol::REMEMBER_TOKEN,
     ];
 
     /**
@@ -48,10 +44,10 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
-        Persist::PASSWORD => self::VAR_HASHED,
-        Persist::IS_ADMIN => self::VAR_BOOLEAN,
-        Persist::IS_DISABLED => self::VAR_BOOLEAN,
-        Persist::IS_PREMIUM => self::VAR_BOOLEAN,
+        UserCol::PASSWORD => Cast::HASHED,
+        UserCol::IS_ADMIN => Cast::BOOLEAN,
+        UserCol::IS_DISABLED => Cast::BOOLEAN,
+        UserCol::IS_PREMIUM => Cast::BOOLEAN,
     ];
 
     public function activations()
