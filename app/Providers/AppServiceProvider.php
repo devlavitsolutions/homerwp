@@ -10,7 +10,9 @@ use App\Database\Services\TokenDbService;
 use App\Database\Services\UserDbService;
 use App\Http\Interfaces\IAuthService;
 use App\Http\Services\AuthService;
+use App\Services\OpenAIService;
 use Illuminate\Support\ServiceProvider;
+use App\Http\Contracts\IContentInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ITokenDbService::class, TokenDbService::class);
         $this->app->bind(IActivationDbService::class, ActivationDbService::class);
         $this->app->bind(IAuthService::class, AuthService::class);
+        $this->app->bind(IContentInterface::class, OpenAIService::class);
     }
 
     /**
