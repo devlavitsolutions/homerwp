@@ -41,4 +41,8 @@ class TestApiEndpoints
     {
         return self::USER_BY_IDENTIFICATOR($userIdentificator) . '/password';
     }
+
+    private function __construct()
+    {
+    }
 }

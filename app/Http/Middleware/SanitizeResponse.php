@@ -3,8 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Constants\Defaults;
-use App\Constants\Labels;
-use App\Constants\Messages;
+use App\Http\Constants\Messages;
+use App\Http\Constants\Field;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,7 +30,7 @@ class SanitizeResponse
                 $status = $response->status();
                 if ($status >= Response::HTTP_INTERNAL_SERVER_ERROR) {
                     $response->setData([
-                        Labels::MESSAGE => Messages::INTERNAL_ERROR,
+                        Field::MESSAGE => Messages::INTERNAL_ERROR,
                     ]);
                 }
                 $originalContent = $response->getData(true);

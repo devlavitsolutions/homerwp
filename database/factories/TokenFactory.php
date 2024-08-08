@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Constants\Defaults;
-use App\Constants\Persist;
+use App\Database\Constants\TokenCol;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class TokenFactory extends Factory
@@ -18,10 +18,10 @@ class TokenFactory extends Factory
     public function definition(): array
     {
         return [
-            Persist::USER_ID => fake()->numberBetween(),
-            Persist::FREE_TOKENS => fake()->numberBetween(0, Defaults::FREE_TOKENS_PER_MONTH),
-            Persist::PAID_TOKENS => fake()->numberBetween(0, self::MAX_PAID_TOKENS),
-            Persist::LAST_USED => fake()->dateTimeThisYear(),
+            TokenCol::USER_ID => fake()->numberBetween(),
+            TokenCol::FREE_TOKENS => fake()->numberBetween(0, Defaults::FREE_TOKENS_PER_MONTH),
+            TokenCol::PAID_TOKENS => fake()->numberBetween(0, self::MAX_PAID_TOKENS),
+            TokenCol::LAST_USED => fake()->dateTimeThisYear(),
         ];
     }
 }

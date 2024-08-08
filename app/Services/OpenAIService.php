@@ -4,8 +4,8 @@ namespace App\Services;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use App\Constants\Routes;
-use App\Constants\Messages;
+use App\Http\Constants\Routes;
+use App\Http\Constants\Messages;
 use App\Constants\Defaults;
 use Symfony\Component\HttpFoundation\Response;
 use Parsedown;
@@ -140,7 +140,7 @@ class OpenAIService implements IContentInterface
 
     private function convertMarkdownToHtml($markdown)
     {
-        $parsedown = new \Parsedown();
+        $parsedown = new Parsedown();
         $html = $parsedown->text($markdown);
         $html = str_replace("\n", "", $html);
         return $html;

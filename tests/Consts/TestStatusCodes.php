@@ -11,4 +11,8 @@ class TestStatusCodes
     const FORBIDDEN = 403;
     const METHOD_NOT_SUPPORTED = 405;
     const UNPROCESSABLE_ENTITY = 422;
+
+    private function __construct()
+    {
+    }
 }

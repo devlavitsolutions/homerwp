@@ -2,7 +2,12 @@
 
 namespace App\Constants;
 
-enum Roles: string {
-    case User = 'User';
-    case Admin = 'Admin';
+class Roles
+{
+    const User = 'User';
+    const Admin = 'Admin';
+
+    private function __construct()
+    {
+    }
 }

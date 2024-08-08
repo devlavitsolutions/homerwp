@@ -2,13 +2,13 @@
 
 namespace Database\Factories;
 
-use App\Constants\Persist;
+use App\Database\Constants\UserCol;
 use App\Helpers\Generators;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Database\Models\User>
  */
 class UserFactory extends Factory
 {
@@ -27,12 +27,12 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            Persist::EMAIL => fake()->unique()->safeEmail(),
-            Persist::PASSWORD => static::$password ??= Generators::encryptPassword(self::DEFAULT_PASSWORD),
-            Persist::REMEMBER_TOKEN => fake()->uuid(),
-            Persist::LICENSE_KEY => fake()->uuid(),
-            Persist::IS_ADMIN => fake()->boolean(),
-            Persist::IS_DISABLED => fake()->boolean(),
+            UserCol::EMAIL => fake()->unique()->safeEmail(),
+            UserCol::PASSWORD => static::$password ??= Generators::encryptPassword(self::DEFAULT_PASSWORD),
+            UserCol::REMEMBER_TOKEN => fake()->uuid(),
+            UserCol::LICENSE_KEY => fake()->uuid(),
+            UserCol::IS_ADMIN => fake()->boolean(),
+            UserCol::IS_DISABLED => fake()->boolean(),
         ];
     }
 

@@ -30,7 +30,8 @@ class AuthControllerTest extends TestCase
 
         $bearerToken = $BEARER_TOKEN_PREFIX . $loginResponse->decodeResponseJson()[TestJsonKeys::TOKEN];
 
-        return $this->withHeader(TestJsonKeys::AUTHORIZATION, $bearerToken);
+        return $this
+            ->withHeader(TestJsonKeys::AUTHORIZATION, $bearerToken);
     }
 
     private function loginAndCreateASingleUser(
@@ -544,7 +545,7 @@ class AuthControllerTest extends TestCase
         $newLicenseKey = $this->loginAndCreateASingleUser();
 
         $postResponse = $this
-            ->postJson(
+            ->putJson(
                 TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT]
             );
@@ -565,7 +566,7 @@ class AuthControllerTest extends TestCase
     {
         $this
             ->login()
-            ->postJson(
+            ->putJson(
                 TestApiEndpoints::USER_TOKENS(self::BAD_KEY),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT],
             )
@@ -584,7 +585,7 @@ class AuthControllerTest extends TestCase
 
         $this
             ->login()
-            ->postJson(
+            ->putJson(
                 TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::NEGATIVE_TOKEN_COUNT],
             )
@@ -662,7 +663,7 @@ class AuthControllerTest extends TestCase
 
         $this
             ->login()
-            ->putJson(
+            ->postJson(
                 TestApiEndpoints::USER_TOKENS($newLicenseKey),
                 [TestJsonKeys::PAID_TOKENS => TestData::NEGATIVE_TOKEN_COUNT],
             )
@@ -678,7 +679,7 @@ class AuthControllerTest extends TestCase
     public function addTokensCountWithoutCredentialsShouldFailWithMessage()
     {
         $response = $this
-            ->putJson(
+            ->postJson(
                 TestApiEndpoints::USER_TOKENS(0),
                 [TestJsonKeys::PAID_TOKENS => TestData::SET_TOKEN_COUNT]
             );
@@ -696,7 +697,6 @@ class AuthControllerTest extends TestCase
     // }
     /**
      * @test
-     * @depends setTokensCountShouldSucceed
      */
     public function deleteTokensCountShouldSucceed()
     {
@@ -890,7 +890,6 @@ class AuthControllerTest extends TestCase
 
     /**
      * @test
-     * @depends getUserShouldReturnDetails
      */
     public function setIsDisabledShouldSucceed()
     {
@@ -932,7 +931,6 @@ class AuthControllerTest extends TestCase
     }
     /**
      * @test
-     * @depends getAllUsersShouldReturnList
      */
     public function setIsDisabledOnAdminShouldFailWithMessage()
     {
@@ -1028,7 +1026,7 @@ class AuthControllerTest extends TestCase
         $putFalseResponse = $this
             ->putJson(
                 TestApiEndpoints::USER_IS_ADMIN($newLicenseKey),
-                [TestJsonKeys::IS_ADMIN_CAMEL => false]
+                [TestJsonKeys::IS_ADMIN => false]
             );
 
         $putFalseResponse
@@ -1114,7 +1112,6 @@ class AuthControllerTest extends TestCase
 
     /**
      * @test
-     * @depends loginSeedUserShouldReturnTokenAndBasicUserDetails
      */
     public function setPasswordShouldSucceed()
     {

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Middleware;
+namespace App\Utilities\Middleware;
 
 use Closure;
 use Illuminate\Http\JsonResponse;
@@ -21,8 +21,8 @@ class FrontendCase
      */
     public function handle(Request $request, Closure $next)
     {
-        // Convert request keys to snake_case
-        $request->replace($this->convertArrayKeys($request->all(), self::CASE_SNAKE));
+        // Convert request keys to camelCase
+        $request->replace($this->convertArrayKeys($request->all(), self::CASE_CAMEL));
 
         // Handle the response
         $response = $next($request);

@@ -21,4 +21,8 @@ class TestJsonKeys
     const DATA = 'data';
     const PAID_TOKENS = 'paidTokens';
     const FREE_TOKENS_REMAINING = 'freeTokensRemainingThisMonth';
+
+    private function __construct()
+    {
+    }
 }

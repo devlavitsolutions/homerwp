@@ -3,15 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Constants\Defaults;
-use App\Constants\Messages;
 use DateTime;
 use Illuminate\Http\Request;
+use App\Database\Models\Log;
+use App\Database\Constants\ActivationCol;
+use App\Database\Constants\LogCol;
+use App\Database\Constants\TokenCol;
+use App\Database\Constants\UserCol;
+use App\Database\Models\Activation;
+use App\Database\Models\Token;
+use App\Database\Models\User;
+use App\Http\Constants\InputRule;
+use App\Http\Constants\Messages;
 use App\Http\Contracts\IContentInterface;
-use App\Models\Log;
-use App\Constants\Persist;
-use App\Models\Activation;
-use App\Models\Token;
-use App\Models\User;
 use Symfony\Component\HttpFoundation\Response;
 
 class ContentController extends Controller
@@ -27,48 +31,48 @@ class ContentController extends Controller
     {
         // Automatically throws a ValidationException and return a 422 Unprocessable Entity response, if not validated
         $fields = $request->validate([
-            Persist::KEYWORDS => Persist::VALIDATE_KEYWORDS,
-            Persist::WEBSITE => Persist::VALIDATE_WEBSITE_EXISTS,
-            Persist::LICENSE_KEY => Persist::VALIDATE_LICENSE_KEY,
+            LogCol::KEYWORDS => InputRule::KEYWORDS,
+            LogCol::WEBSITE => InputRule::WEBSITE_EXISTS,
+            LogCol::LICENSE_KEY => InputRule::LICENSE_KEY,
         ]);
 
-        $keywords = $fields[Persist::KEYWORDS];
-        $website = $fields[Persist::WEBSITE];
-        $licenseKey = $fields[Persist::LICENSE_KEY];
+        $keywords = $fields[LogCol::KEYWORDS];
+        $website = $fields[LogCol::WEBSITE];
+        $licenseKey = $fields[LogCol::LICENSE_KEY];
 
         Activation
-            ::where(Persist::LICENSE_KEY, '=', $licenseKey)
-            ->where(Persist::WEBSITE, '=', $website)
+            ::where(ActivationCol::LICENSE_KEY, '=', $licenseKey)
+            ->where(ActivationCol::WEBSITE, '=', $website)
             ->firstOrFail();
 
-        $user = User::where(Persist::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
-        $token = Token::where(Persist::USER_ID, '=', $user[Persist::ID])->first();
+        $user = User::where(UserCol::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
+        $token = Token::where(TokenCol::USER_ID, '=', $user[UserCol::ID])->first();
         $token
-            && $token[Persist::PAID_TOKENS] === 0
-            && $token[Persist::FREE_TOKENS] >= Defaults::FREE_TOKENS_PER_MONTH
+            && $token[TokenCol::PAID_TOKENS] === 0
+            && $token[TokenCol::FREE_TOKENS] >= Defaults::FREE_TOKENS_PER_MONTH
             && abort(Response::HTTP_PAYMENT_REQUIRED, Messages::PAYMENT_REQUIRED);
 
         $response = $this->contentService->getAssistantResponse($keywords);
 
         Log::create([
-            Persist::KEYWORDS => $keywords,
-            Persist::WEBSITE => $website,
-            Persist::LICENSE_KEY => $licenseKey,
-            Persist::RESPONSE => json_encode($response),
+            LogCol::KEYWORDS => $keywords,
+            LogCol::WEBSITE => $website,
+            LogCol::LICENSE_KEY => $licenseKey,
+            LogCol::RESPONSE => json_encode($response),
         ]);
 
         if ($token) {
-            $token[Persist::FREE_TOKENS] < Defaults::FREE_TOKENS_PER_MONTH
-                ? $token->increment(Persist::FREE_TOKENS)
-                : $token->decrement(Persist::PAID_TOKENS);
+            $token[TokenCol::FREE_TOKENS] < Defaults::FREE_TOKENS_PER_MONTH
+                ? $token->increment(TokenCol::FREE_TOKENS)
+                : $token->decrement(TokenCol::PAID_TOKENS);
         } else {
             $token = Token::create([
-                Persist::USER_ID => $user[Persist::ID],
-                Persist::FREE_TOKENS => 1,
-                Persist::PAID_TOKENS => 0,
+                TokenCol::USER_ID => $user[UserCol::ID],
+                TokenCol::FREE_TOKENS => 1,
+                TokenCol::PAID_TOKENS => 0,
             ]);
         }
-        $token[Persist::LAST_USED] = new DateTime();
+        $token[TokenCol::LAST_USED] = new DateTime();
         $token->save();
 
         return response()->json($response);
