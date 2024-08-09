@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 
 interface IActivationService
 {
-    function validatePostActivationEndpoint(Request $request): ActivationDTO;
-    function validateDeleteActivationEndpoint(Request $request): ActivationDTO;
+    public function validateDeleteActivationEndpoint(Request $request): ActivationDTO;
+
+    public function validatePostActivationEndpoint(Request $request): ActivationDTO;
 }

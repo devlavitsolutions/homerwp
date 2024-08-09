@@ -11,8 +11,6 @@ use App\Http\Constants\InputRule;
 use App\Http\Constants\Messages;
 use App\Http\DTOs\ActivationDTO;
 use App\Http\Interfaces\IActivationService;
-use DateInterval;
-use DateTime;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -21,38 +19,25 @@ class ActivationService implements IActivationService
     public function __construct(
         private IUserDbService $userDbService,
         private IActivationDbService $activationDbService,
-    ) {
-    }
+    ) {}
 
-    public function validatePostActivationEndpoint(Request $request): ActivationDTO
+    public function validateDeleteActivationEndpoint(Request $request): ActivationDTO
     {
-        $fields = $request->validate([
-            ActivationCol::LICENSE_KEY => InputRule::EXISTING_LICENSE_KEY,
-            ActivationCol::WEBSITE => InputRule::WEBSITE
-        ]);
+        $fields = $request->validate(
+            [
+                ActivationCol::LICENSE_KEY => InputRule::EXISTING_LICENSE_KEY,
+                ActivationCol::WEBSITE => InputRule::WEBSITE_EXISTS,
+            ]
+        );
 
         $user = $this->userDbService->selectUserByLicenseKey(
-            $fields[ActivationCol::LICENSE_KEY]
-        );
-        $latestActivation = $this->activationDbService->selectLatestActivationByLicenseKey(
-            $fields[ActivationCol::LICENSE_KEY]
+            $fields[ActivationCol::LICENSE_KEY],
         );
 
-        $currentDate = new DateTime();
-        $requiredInterval = new DateInterval(
-            Defaults::PERIOD_BETWEEN_ACTIVATIONS_FOR_FREE_USER
-        );
-        $oneMonthAgo = (clone $currentDate)->sub($requiredInterval);
-        $latestActivationDateTime = new DateTime($latestActivation[ActivationCol::UPDATED_AT]);
-
-        if (
-            !$user[UserCol::IS_PREMIUM]
-            && $latestActivation
-            && $latestActivationDateTime >= $oneMonthAgo
-        ) {
+        if ( ! $user[UserCol::IS_PREMIUM]) {
             abort(
                 Response::HTTP_FORBIDDEN,
-                Messages::PREMIUM_CONTENT
+                Messages::PREMIUM_CONTENT,
             );
         }
 
@@ -64,21 +49,36 @@ class ActivationService implements IActivationService
         );
     }
 
-    function validateDeleteActivationEndpoint(Request $request): ActivationDTO
+    public function validatePostActivationEndpoint(Request $request): ActivationDTO
     {
-        $fields = $request->validate([
-            ActivationCol::LICENSE_KEY => InputRule::EXISTING_LICENSE_KEY,
-            ActivationCol::WEBSITE => InputRule::WEBSITE_EXISTS,
-        ]);
-
-        $user = $this->userDbService->selectUserByLicenseKey(
-            $fields[ActivationCol::LICENSE_KEY]
+        $fields = $request->validate(
+            [
+                ActivationCol::LICENSE_KEY => InputRule::EXISTING_LICENSE_KEY,
+                ActivationCol::WEBSITE => InputRule::WEBSITE,
+            ]
         );
 
-        if (!$user[UserCol::IS_PREMIUM]) {
+        $user = $this->userDbService->selectUserByLicenseKey(
+            $fields[ActivationCol::LICENSE_KEY],
+        );
+        $latestActivation = $this->activationDbService->selectLatestActivationByLicenseKey(
+            $fields[ActivationCol::LICENSE_KEY],
+        );
+
+        $currentDate = new \DateTime();
+        $requiredInterval = new \DateInterval(
+            Defaults::PERIOD_BETWEEN_ACTIVATIONS_FOR_FREE_USER,
+        );
+        $oneMonthAgo = (clone $currentDate)->sub($requiredInterval);
+        $latestActivationDateTime = new \DateTime($latestActivation[ActivationCol::UPDATED_AT]);
+
+        if ( ! $user[UserCol::IS_PREMIUM]
+            && $latestActivation
+            && $latestActivationDateTime >= $oneMonthAgo
+        ) {
             abort(
                 Response::HTTP_FORBIDDEN,
-                Messages::PREMIUM_CONTENT
+                Messages::PREMIUM_CONTENT,
             );
         }
 

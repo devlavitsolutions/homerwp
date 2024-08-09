@@ -4,11 +4,9 @@ namespace App\Database\Constants;
 
 class Cast
 {
-    const BOOLEAN = 'boolean';
-    const HASHED = 'hashed';
-    const DATETIME = 'datetime';
+    public const BOOLEAN = 'boolean';
+    public const DATETIME = 'datetime';
+    public const HASHED = 'hashed';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }

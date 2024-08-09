@@ -4,10 +4,8 @@ namespace App\Constants;
 
 class Roles
 {
-    const User = 'User';
-    const Admin = 'Admin';
+    public const ADMIN = 'Admin';
+    public const USER = 'User';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }

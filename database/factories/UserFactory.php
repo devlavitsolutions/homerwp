@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Database\Constants\UserCol;
 use App\Helpers\Generators;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Database\Models\User>

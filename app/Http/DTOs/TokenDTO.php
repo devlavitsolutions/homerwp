@@ -6,8 +6,8 @@ use App\Utilities\General\ShallowSerializable;
 
 class TokenDTO extends ShallowSerializable
 {
-    public int $paidTokens;
     public string $licenseKey;
+    public int $paidTokens;
     public string $userId;
 
     public function __construct(int $paidTokens, string $licenseKey, string $userId)

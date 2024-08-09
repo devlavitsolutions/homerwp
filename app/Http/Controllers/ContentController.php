@@ -3,19 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Constants\Defaults;
-use DateTime;
-use Illuminate\Http\Request;
-use App\Database\Models\Log;
 use App\Database\Constants\ActivationCol;
 use App\Database\Constants\LogCol;
 use App\Database\Constants\TokenCol;
 use App\Database\Constants\UserCol;
 use App\Database\Models\Activation;
+use App\Database\Models\Log;
 use App\Database\Models\Token;
 use App\Database\Models\User;
 use App\Http\Constants\InputRule;
 use App\Http\Constants\Messages;
 use App\Http\Contracts\IContentInterface;
+use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class ContentController extends Controller
@@ -40,15 +39,14 @@ class ContentController extends Controller
         $website = $fields[LogCol::WEBSITE];
         $licenseKey = $fields[LogCol::LICENSE_KEY];
 
-        Activation
-            ::where(ActivationCol::LICENSE_KEY, '=', $licenseKey)
+        Activation::where(ActivationCol::LICENSE_KEY, '=', $licenseKey)
             ->where(ActivationCol::WEBSITE, '=', $website)
             ->firstOrFail();
 
         $user = User::where(UserCol::LICENSE_KEY, '=', $licenseKey)->firstOrFail();
         $token = Token::where(TokenCol::USER_ID, '=', $user[UserCol::ID])->first();
         $token
-            && $token[TokenCol::PAID_TOKENS] === 0
+            && 0 === $token[TokenCol::PAID_TOKENS]
             && $token[TokenCol::FREE_TOKENS] >= Defaults::FREE_TOKENS_PER_MONTH
             && abort(Response::HTTP_PAYMENT_REQUIRED, Messages::PAYMENT_REQUIRED);
 
@@ -72,7 +70,7 @@ class ContentController extends Controller
                 TokenCol::PAID_TOKENS => 0,
             ]);
         }
-        $token[TokenCol::LAST_USED] = new DateTime();
+        $token[TokenCol::LAST_USED] = new \DateTime();
         $token->save();
 
         return response()->json($response);

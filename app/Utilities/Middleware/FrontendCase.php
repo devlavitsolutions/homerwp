@@ -2,32 +2,29 @@
 
 namespace App\Utilities\Middleware;
 
-use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class FrontendCase
 {
-    protected const CASE_SNAKE = 'snake';
     protected const CASE_CAMEL = 'camel';
+    protected const CASE_SNAKE = 'snake';
 
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
      * @return mixed
      */
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, \Closure $next)
     {
-        // Convert request keys to camelCase
+        // Convert request keys to camelCase.
         $request->replace($this->convertArrayKeys($request->all(), self::CASE_CAMEL));
 
-        // Handle the response
+        // Handle the response.
         $response = $next($request);
 
-        // Convert response keys to camelCase
+        // Convert response keys to camelCase.
         if ($response instanceof JsonResponse) {
             $originalContent = $response->getData(true);
             $camelCasedContent = $this->convertArrayKeys($originalContent, self::CASE_CAMEL);
@@ -39,19 +36,15 @@ class FrontendCase
 
     /**
      * Convert the keys of an array to a specific case.
-     *
-     * @param  array  $array
-     * @param  string  $case
-     * @return array
      */
     protected function convertArrayKeys(array $array, string $case): array
     {
         $convertedArray = [];
 
         foreach ($array as $key => $value) {
-            $newKey = $case === self::CASE_CAMEL ? Str::camel($key) : Str::snake($key);
+            $newKey = (self::CASE_CAMEL === $case) ? Str::camel($key) : Str::snake($key);
 
-            if (is_array($value)) {
+            if (true === is_array($value)) {
                 $value = $this->convertArrayKeys($value, $case);
             }
 

@@ -11,6 +11,13 @@ class Activation extends Model
     use HasFactory;
 
     /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -27,11 +34,4 @@ class Activation extends Model
      * @var array<int, string>
      */
     protected $hidden = [];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [];
 }

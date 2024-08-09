@@ -4,9 +4,7 @@ namespace App\Http\Constants;
 
 class Query
 {
-    const PAGE = 'page';
+    public const PAGE = 'page';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }

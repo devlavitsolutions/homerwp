@@ -4,11 +4,9 @@ namespace App\Constants;
 
 class Ops
 {
-    const WILDCARD = '*';
-    const EQ = '=';
-    const DESC = 'desc';
+    public const DESC = 'desc';
+    public const EQ = '=';
+    public const WILDCARD = '*';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }

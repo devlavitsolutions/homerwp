@@ -13,14 +13,25 @@ class ActivationController extends Controller
         private IUserDbService $userDbService,
         private IActivationDbService $activationDbService,
         private IActivationService $activationService,
-    ) {
+    ) {}
+
+    public function deleteActivation(Request $request)
+    {
+        $activationData = $this->activationService->validateDeleteActivationEndpoint($request);
+
+        $this->activationDbService->deleteActivation(
+            $activationData->licenseKey,
+            $activationData->website,
+        );
+
+        return response()->noContent();
     }
 
     public function postActivation(Request $request)
     {
         $activationData = $this->activationService->validatePostActivationEndpoint($request);
 
-        if (!$activationData->userIsPremium) {
+        if ( ! $activationData->userIsPremium) {
             $this->activationDbService->deleteActivation(
                 $activationData->licenseKey,
                 $activationData->website,
@@ -30,17 +41,5 @@ class ActivationController extends Controller
         $this->activationDbService->createActivation($activationData);
 
         return $activationData;
-    }
-
-    public function deleteActivation(Request $request)
-    {
-        $activationData = $this->activationService->validateDeleteActivationEndpoint($request);
-
-        $this->activationDbService->deleteActivation(
-            $activationData->licenseKey,
-            $activationData->website
-        );
-
-        return response()->noContent();
     }
 }
