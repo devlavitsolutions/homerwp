@@ -152,7 +152,7 @@ class OpenAIService implements IContentInterface
             $articleHtmlContent = preg_replace_callback(
                 '/\b'.preg_quote($message, '/').'\b/i',
                 function ($matches) use ($message) {
-                    return '<a href="https://en.wikipedia.org/w/index.php?search='.urlencode($message).'">'.$matches[0].'</a>';
+                    return '<a href="https://en.wikipedia.org/w/index.php?search='.urlencode($message).'" target="_blank">'.$matches[0].'</a>';
                 },
                 $articleHtmlContent,
                 1
@@ -165,7 +165,7 @@ class OpenAIService implements IContentInterface
             $articleHtmlContent = preg_replace_callback(
                 '/\b'.preg_quote($firstKeyword, '/').'\b/i',
                 function ($matches) use ($firstKeyword) {
-                    return '<a href="https://en.wikipedia.org/w/index.php?search='.urlencode($firstKeyword).'">'.$matches[0].'</a>';
+                    return '<a href="https://en.wikipedia.org/w/index.php?search='.urlencode($firstKeyword).'" target="_blank">'.$matches[0].'</a>';
                 },
                 $articleHtmlContent,
                 1
