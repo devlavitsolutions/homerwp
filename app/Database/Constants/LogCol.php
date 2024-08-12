@@ -4,13 +4,11 @@ namespace App\Database\Constants;
 
 class LogCol
 {
-    const ID = 'id';
-    const WEBSITE = 'website';
-    const LICENSE_KEY = 'license_key';
-    const RESPONSE = 'response';
-    const KEYWORDS = 'keywords';
+    public const ID = 'id';
+    public const KEYWORDS = 'keywords';
+    public const LICENSE_KEY = 'license_key';
+    public const RESPONSE = 'response';
+    public const WEBSITE = 'website';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }

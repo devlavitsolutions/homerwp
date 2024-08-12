@@ -13,14 +13,23 @@ use Illuminate\Http\Request;
 
 interface IAuthService
 {
-    function validateLoginEndpoint(Request $request): User;
-    function validateRegisterEndpoint(Request $request): CredentialsDTO;
-    function validateGetAllUsersEndpoint(Request $request): int;
-    function validateLicenseKeyRouteParam(Request $request): string;
-    function validateUserIdRouteParam(Request $request): string;
-    function validateSetEmailEndpoint(Request $request): EmailDTO;
-    function validateTokensEndpoint(Request $request): TokenDTO;
-    function validateSetIsDisabledEndpoint(Request $request): IsDisabledDTO;
-    function validateSetIsAdminEndpoint(Request $request): IsAdminDTO;
-    function validateSetPasswordEndpoint(Request $request): PasswordDTO;
+    public function validateGetAllUsersEndpoint(Request $request): int;
+
+    public function validateLicenseKeyRouteParam(Request $request): string;
+
+    public function validateLoginEndpoint(Request $request): User;
+
+    public function validateRegisterEndpoint(Request $request): CredentialsDTO;
+
+    public function validateSetEmailEndpoint(Request $request): EmailDTO;
+
+    public function validateSetIsAdminEndpoint(Request $request): IsAdminDTO;
+
+    public function validateSetIsDisabledEndpoint(Request $request): IsDisabledDTO;
+
+    public function validateSetPasswordEndpoint(Request $request): PasswordDTO;
+
+    public function validateTokensEndpoint(Request $request): TokenDTO;
+
+    public function validateUserIdRouteParam(Request $request): string;
 }

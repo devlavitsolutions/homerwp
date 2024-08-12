@@ -3,9 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Constants\Defaults;
-use App\Http\Constants\Messages;
 use App\Http\Constants\Field;
-use Closure;
+use App\Http\Constants\Messages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
@@ -17,10 +16,10 @@ class SanitizeResponse
         'exception',
         'file',
         'line',
-        'trace'
+        'trace',
     ];
 
-    public function handle(Request $request, Closure $next)
+    public function handle(Request $request, \Closure $next)
     {
         // Handle the response
         $response = $next($request);
@@ -34,7 +33,7 @@ class SanitizeResponse
                     ]);
                 }
                 $originalContent = $response->getData(true);
-                $sanitizedContent = $this->sanitizeResponse($originalContent);
+                $sanitizedContent = $this->performSanitization($originalContent);
                 $response->setData($sanitizedContent);
             }
         }
@@ -42,12 +41,12 @@ class SanitizeResponse
         return $response;
     }
 
-    protected function sanitizeResponse(array $array): array
+    protected function performSanitization(array $array): array
     {
         $sanitizedArray = [];
 
         foreach ($array as $key => $value) {
-            if (!in_array($key, self::BLACKLIST)) {
+            if ( ! in_array($key, self::BLACKLIST)) {
                 $sanitizedArray[$key] = $value;
             }
         }

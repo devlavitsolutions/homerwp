@@ -4,10 +4,8 @@ namespace App\Http\Constants;
 
 class Param
 {
-    const LICENSE_KEY = 'licenseKey';
-    const USER_ID = 'userId';
+    public const LICENSE_KEY = 'licenseKey';
+    public const USER_ID = 'userId';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }

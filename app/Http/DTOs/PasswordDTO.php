@@ -6,8 +6,8 @@ use App\Utilities\General\ShallowSerializable;
 
 class PasswordDTO extends ShallowSerializable
 {
-    public string $password;
     public string $licenseKey;
+    public string $password;
 
     public function __construct(string $password, string $licenseKey)
     {

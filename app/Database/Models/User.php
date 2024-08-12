@@ -11,7 +11,21 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens;
+    use HasFactory;
+    use Notifiable;
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        UserCol::PASSWORD => Cast::HASHED,
+        UserCol::IS_ADMIN => Cast::BOOLEAN,
+        UserCol::IS_DISABLED => Cast::BOOLEAN,
+        UserCol::IS_PREMIUM => Cast::BOOLEAN,
+    ];
 
     /**
      * The attributes that are mass assignable.
@@ -25,7 +39,7 @@ class User extends Authenticatable
         UserCol::LICENSE_KEY,
         UserCol::IS_ADMIN,
         UserCol::IS_DISABLED,
-        UserCol::CID
+        UserCol::CID,
     ];
 
     /**
@@ -36,18 +50,6 @@ class User extends Authenticatable
     protected $hidden = [
         UserCol::PASSWORD,
         UserCol::REMEMBER_TOKEN,
-    ];
-
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        UserCol::PASSWORD => Cast::HASHED,
-        UserCol::IS_ADMIN => Cast::BOOLEAN,
-        UserCol::IS_DISABLED => Cast::BOOLEAN,
-        UserCol::IS_PREMIUM => Cast::BOOLEAN,
     ];
 
     public function activations()

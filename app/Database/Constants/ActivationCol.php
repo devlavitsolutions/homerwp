@@ -4,13 +4,11 @@ namespace App\Database\Constants;
 
 class ActivationCol
 {
-    const ID = 'id';
-    const USER_ID = 'user_id';
-    const LICENSE_KEY = 'license_key';
-    const WEBSITE = 'website';
-    const UPDATED_AT = 'updated_at';
+    public const ID = 'id';
+    public const LICENSE_KEY = 'license_key';
+    public const UPDATED_AT = 'updated_at';
+    public const USER_ID = 'user_id';
+    public const WEBSITE = 'website';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }

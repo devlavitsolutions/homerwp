@@ -9,5 +9,10 @@ class Log extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['keywords', 'website', 'license_key', 'response'];
+    protected $fillable = [
+        'keywords',
+        'website',
+        'license_key',
+        'response',
+    ];
 }

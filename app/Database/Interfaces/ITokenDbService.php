@@ -6,12 +6,12 @@ use App\Database\Models\Token;
 
 interface ITokenDbService
 {
-    function setPaidTokens(
+    public function addPaidTokens(
         string $userId,
         int $paidTokens,
     ): Token;
 
-    function addPaidTokens(
+    public function setPaidTokens(
         string $userId,
         int $paidTokens,
     ): Token;

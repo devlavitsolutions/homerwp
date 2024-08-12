@@ -4,12 +4,10 @@ namespace App\Database\Constants;
 
 class Table
 {
-    const USERS = 'users';
-    const TOKENS = 'tokens';
-    const ACTIVATIONS = 'activations';
-    const LOGS = 'logs';
+    public const ACTIVATIONS = 'activations';
+    public const LOGS = 'logs';
+    public const TOKENS = 'tokens';
+    public const USERS = 'users';
 
-    private function __construct()
-    {
-    }
+    private function __construct() {}
 }
