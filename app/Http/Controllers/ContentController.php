@@ -11,6 +11,7 @@ use App\Database\Models\Activation;
 use App\Database\Models\Log;
 use App\Database\Models\Token;
 use App\Database\Models\User;
+use App\Http\Constants\Field;
 use App\Http\Constants\InputRule;
 use App\Http\Constants\Messages;
 use App\Http\Contracts\IContentInterface;
@@ -30,14 +31,14 @@ class ContentController extends Controller
     {
         // Automatically throws a ValidationException and return a 422 Unprocessable Entity response, if not validated
         $fields = $request->validate([
-            LogCol::KEYWORDS => InputRule::KEYWORDS,
-            LogCol::WEBSITE => InputRule::WEBSITE_EXISTS,
-            LogCol::LICENSE_KEY => InputRule::LICENSE_KEY,
+            Field::KEYWORDS => InputRule::KEYWORDS,
+            Field::WEBSITE => InputRule::WEBSITE_EXISTS,
+            Field::LICENSE_KEY => InputRule::LICENSE_KEY,
         ]);
 
-        $keywords = $fields[LogCol::KEYWORDS];
-        $website = $fields[LogCol::WEBSITE];
-        $licenseKey = $fields[LogCol::LICENSE_KEY];
+        $keywords = $fields[Field::KEYWORDS];
+        $website = $fields[Field::WEBSITE];
+        $licenseKey = $fields[Field::LICENSE_KEY];
 
         Activation::where(ActivationCol::LICENSE_KEY, '=', $licenseKey)
             ->where(ActivationCol::WEBSITE, '=', $website)

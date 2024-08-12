@@ -8,6 +8,7 @@ class Field
     public const FREE_TOKENS = 'freeTokensRemainingThisMonth';
     public const IS_ADMIN = 'isAdmin';
     public const IS_DISABLED = 'isDisabled';
+    public const KEYWORDS = 'keywords';
     public const LICENSE_KEY = 'licenseKey';
     public const MESSAGE = 'message';
     public const PAID_TOKENS = 'paidTokens';
