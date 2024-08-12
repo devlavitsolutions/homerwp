@@ -1,10 +1,37 @@
-### Send a request to the GPT assistant to retrieve a response
+### Login user
+POST http://127.0.0.1:8000/api/login
+Content-Type: application/json
 
+{
+	"email": "stefan.jankovic@lavitsolutions.com",
+	"password": "seedpas5word_CHANGE_IT"
+}
+
+### Buy paid tokens
+POST http://127.0.0.1:8000/api/users/5f83455c-b11d-4c1e-986a-60b9127d7585/tokensCount
+Authorization: Bearer 3|cglaE8aRrmm1w7TgIceBFW1CXVQRFHSwKnUDeqgF24432aff
+
+{
+	"paidTokens": 100
+}
+
+
+### Activate user
+POST http://127.0.0.1:8000/api/activations
+Content-Type: application/json
+
+{
+	"licenseKey": "5f83455c-b11d-4c1e-986a-60b9127d7585",
+	"website": "http://www.example.com"
+}
+
+
+### Send a request to the GPT assistant to retrieve a response
 POST http://127.0.0.1:8000/api/content
 Content-Type: application/json
 
 {
 	"keywords": "wordpress speed hosting",
-	"license_key": "your license key 110",
-	"website": "https://www.example.com"
+	"licenseKey": "5f83455c-b11d-4c1e-986a-60b9127d7585",
+	"website": "http://www.example.com"
 }

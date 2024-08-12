@@ -31,14 +31,20 @@ class ActivationController extends Controller
     {
         $activationData = $this->activationService->validatePostActivationEndpoint($request);
 
-        if ( ! $activationData->userIsPremium) {
-            $this->activationDbService->deleteActivation(
-                $activationData->licenseKey,
-                $activationData->website,
-            );
-        }
+        error_log(10);
+
+        // if ( ! $activationData->userIsPremium) {
+        //     $this->activationDbService->deleteActivation(
+        //         $activationData->licenseKey,
+        //         $activationData->website,
+        //     );
+        // }
+
+        error_log(11);
 
         $this->activationDbService->createActivation($activationData);
+
+        error_log(12);
 
         return $activationData;
     }

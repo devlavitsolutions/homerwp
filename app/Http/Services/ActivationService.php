@@ -52,6 +52,8 @@ class ActivationService implements IActivationService
 
     public function validatePostActivationEndpoint(Request $request): ActivationDTO
     {
+        error_log(1);
+
         $fields = $request->validate(
             [
                 Field::LICENSE_KEY => InputRule::EXISTING_LICENSE_KEY,
@@ -59,12 +61,16 @@ class ActivationService implements IActivationService
             ]
         );
 
+        error_log(2);
+
         $user = $this->userDbService->selectUserByLicenseKey(
             $fields[Field::LICENSE_KEY],
         );
         $latestActivation = $this->activationDbService->selectLatestActivationByLicenseKey(
             $fields[Field::LICENSE_KEY],
         );
+
+        error_log(3);
 
         if ( ! $user[UserCol::IS_PREMIUM] && $latestActivation) {
             $currentDate = new \DateTime();
@@ -81,6 +87,8 @@ class ActivationService implements IActivationService
                 );
             }
         }
+
+        error_log(4);
 
         return new ActivationDTO(
             $user[UserCol::ID],
