@@ -31,7 +31,7 @@ POST http://127.0.0.1:8000/api/content
 Content-Type: application/json
 
 {
-	"keywords": "wordpress website",
+	"keywords": "Wordpress Website",
 	"licenseKey": "5f83455c-b11d-4c1e-986a-60b9127d7585",
 	"website": "http://www.example.com"
 }
