@@ -8,11 +8,11 @@ Content-Type: application/json
 }
 
 ### Buy paid tokens
-POST http://127.0.0.1:8000/api/users/5f83455c-b11d-4c1e-986a-60b9127d7585/tokensCount
-Authorization: Bearer 3|cglaE8aRrmm1w7TgIceBFW1CXVQRFHSwKnUDeqgF24432aff
+PUT http://127.0.0.1:8000/api/users/5f83455c-b11d-4c1e-986a-60b9127d7585/tokensCount
+Authorization: Bearer 4|bRpRuXvmIeiC5TRggTqTn9BWBF4wwfBQfc7fmEvF02e3b2fa
 
 {
-	"paidTokens": 100
+	"paidTokens": 9999
 }
 
 
@@ -31,7 +31,7 @@ POST http://127.0.0.1:8000/api/content
 Content-Type: application/json
 
 {
-	"keywords": "wordpress speed hosting",
+	"keywords": "wordpress website",
 	"licenseKey": "5f83455c-b11d-4c1e-986a-60b9127d7585",
 	"website": "http://www.example.com"
 }

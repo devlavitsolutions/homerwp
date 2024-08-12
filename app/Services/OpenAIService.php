@@ -148,24 +148,19 @@ class OpenAIService implements IContentInterface
 
         // Find and replace the first occurrence of the message string in the articleHtmlContent
         $messageFound = false;
-        $firstReplacementDone = false;
         if (stripos($articleHtmlContent, $message) !== false) {
             $articleHtmlContent = preg_replace_callback(
                 '/\b'.preg_quote($message, '/').'\b/i',
-                function ($matches) use ($message, &$firstReplacementDone) {
-                    if (!$firstReplacementDone) {
-                        $firstReplacementDone = true;
-                        return '<a href="https://en.wikipedia.org/w/index.php?search='.urlencode($message).'">'.$matches[0].'</a>';
-                    }
-                    return $matches[0];
+                function ($matches) use ($message) {
+                    return '<a href="https://en.wikipedia.org/w/index.php?search='.urlencode($message).'">'.$matches[0].'</a>';
                 },
                 $articleHtmlContent,
-                1,
-                $messageFound
+                1
             );
+            $messageFound = true;
         }
 
-        // If message string is not found, fall back to the first keyword
+        // If the message is not found, fall back to the first keyword
         if (!$messageFound && $firstKeyword) {
             $articleHtmlContent = preg_replace_callback(
                 '/\b'.preg_quote($firstKeyword, '/').'\b/i',
@@ -177,29 +172,20 @@ class OpenAIService implements IContentInterface
             );
         }
 
-        // Find and replace the second occurrence of the message string in the articleHtmlContent
-        $secondMessageFound = false;
-        $secondReplacementDone = false;
-        if (stripos($articleHtmlContent, $message) !== false) {
-            $articleHtmlContent = preg_replace_callback(
-                '/\b'.preg_quote($message, '/').'\b/i',
-                function ($matches) use (&$secondReplacementDone) {
-                    if (!$secondReplacementDone) {
-                        $secondReplacementDone = true;
-                        return '<a href="/">'.$matches[0].'</a>';
-                    }
-                    return $matches[0];
-                },
-                $articleHtmlContent,
-                1,
-                $secondMessageFound
-            );
-        }
+        // Find another occurrence of the message that is not inside an <a> tag and add a link to the homepage
+        $articleHtmlContent = preg_replace_callback(
+            '/\b'.preg_quote($message, '/').'\b(?![^<]*<\/a>)/i',
+            function ($matches) {
+                return '<a href="/">'.$matches[0].'</a>';
+            },
+            $articleHtmlContent,
+            1
+        );
 
         // If another message string is not found, fall back to the second keyword
-        if (!$secondMessageFound && $secondKeyword) {
+        if (stripos($articleHtmlContent, '<a href="/">') === false && $secondKeyword) {
             $articleHtmlContent = preg_replace_callback(
-                '/\b'.preg_quote($secondKeyword, '/').'\b/i',
+                '/\b'.preg_quote($secondKeyword, '/').'\b(?![^<]*<\/a>)/i',
                 function ($matches) {
                     return '<a href="/">'.$matches[0].'</a>';
                 },
