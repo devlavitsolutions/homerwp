@@ -31,13 +31,6 @@ class ActivationController extends Controller
     {
         $activationData = $this->activationService->validatePostActivationEndpoint($request);
 
-        if ( ! $activationData->userIsPremium) {
-            $this->activationDbService->deleteActivation(
-                $activationData->licenseKey,
-                $activationData->website,
-            );
-        }
-
         $this->activationDbService->createActivation($activationData);
 
         return $activationData;

@@ -80,6 +80,11 @@ class ActivationService implements IActivationService
                     Messages::PREMIUM_CONTENT,
                 );
             }
+
+            $this->activationDbService->deleteActivation(
+                $fields[Field::LICENSE_KEY],
+                $fields[Field::WEBSITE],
+            );
         }
 
         return new ActivationDTO(
